@@ -1,0 +1,519 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Submit Onboarding Details") }}{% endblock %}
+
+{% block page_content %}
+<div class="container vendor-onboarding-form py-5">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">{{ _("Submit Your Onboarding Details") }}</h3>
+                    <small id="application-id">{{ _("Loading...") }}</small>
+                </div>
+                
+                <div class="card-body">
+                    <div id="loading-message" class="text-center py-4">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">{{ _("Loading your onboarding details...") }}</p>
+                    </div>
+                    
+                    <div id="error-message" class="alert alert-danger" style="display: none;">
+                        <i class="fa fa-exclamation-triangle"></i> <span id="error-text"></span>
+                    </div>
+                    
+                    <form id="onboarding-form" style="display: none;">
+                        <input type="hidden" id="onboarding_id">
+                        
+                        <!-- GSTN -->
+                        <div class="form-group">
+                            <label for="gstn">{{ _("GSTN") }} <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="gstn" 
+                                   name="gstn" 
+                                   maxlength="15"
+                                   placeholder="22AAAAA0000A1Z5"
+                                   required>
+                            <small class="form-text text-muted">{{ _("15 character GSTN number") }}</small>
+                        </div>
+                        
+                        <!-- PAN -->
+                        <div class="form-group">
+                            <label for="pan">{{ _("PAN") }} <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="pan" 
+                                   name="pan" 
+                                   maxlength="10"
+                                   style="text-transform: uppercase;"
+                                   placeholder="AAAAA0000A"
+                                   required>
+                            <small class="form-text text-muted">{{ _("10 character PAN number") }}</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Bank Account Number -->
+                                <div class="form-group">
+                                    <label for="bank_account_no">{{ _("Bank Account Number") }} <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="bank_account_no" 
+                                           name="bank_account_no" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Bank IFSC Code -->
+                                <div class="form-group">
+                                    <label for="bank_ifsc_code">{{ _("Bank IFSC Code") }} <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="bank_ifsc_code" 
+                                           name="bank_ifsc_code" 
+                                           maxlength="11"
+                                           style="text-transform: uppercase;"
+                                           placeholder="SBIN0001234"
+                                           required>
+                                    <small class="form-text text-muted">{{ _("11 character IFSC code") }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Udyog Aadhaar -->
+                                <div class="form-group">
+                                    <label for="udyog_aadhaar">{{ _("Udyog Aadhaar") }}</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="udyog_aadhaar" 
+                                           name="udyog_aadhaar">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Phone Number -->
+                                <div class="form-group">
+                                    <label for="phone_number">{{ _("Phone Number") }} <span class="text-danger">*</span></label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="phone_number" 
+                                           name="phone_number" 
+                                           maxlength="10"
+                                           pattern="[0-9]{10}"
+                                           placeholder="9876543210"
+                                           required>
+                                    <small class="form-text text-muted">{{ _("10 digit mobile number") }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Document Upload Section -->
+                        <div class="form-group">
+                            <label>{{ _("Upload Documents") }}</label>
+                            <div class="alert alert-info">
+                                <h6>{{ _("Required Documents") }}:</h6>
+                                <ul>
+                                    <li>{{ _("GSTN Certificate") }}</li>
+                                    <li>{{ _("PAN Card") }}</li>
+                                    <li>{{ _("Cancelled Cheque / Bank Statement") }}</li>
+                                    <li>{{ _("Udyog Aadhaar Certificate") }}</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- File Upload Areas -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="gstn_certificate">{{ _("GSTN Certificate") }} *</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="gstn_certificate" name="gstn_certificate" accept=".pdf,.jpg,.jpeg,.png" required>
+                                            <label class="custom-file-label" for="gstn_certificate">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="pan_card">{{ _("PAN Card") }} *</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="pan_card" name="pan_card" accept=".pdf,.jpg,.jpeg,.png" required>
+                                            <label class="custom-file-label" for="pan_card">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="bank_cheque">{{ _("Cancelled Cheque / Bank Statement") }} *</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="bank_cheque" name="bank_cheque" accept=".pdf,.jpg,.jpeg,.png" required>
+                                            <label class="custom-file-label" for="bank_cheque">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="udyog_aadhaar_certificate">{{ _("Udyog Aadhaar Certificate") }}</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="udyog_aadhaar_certificate" name="udyog_aadhaar_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                                            <label class="custom-file-label" for="udyog_aadhaar_certificate">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Upload Progress -->
+                            <div id="upload-progress" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <p class="text-center mt-2">{{ _("Uploading documents...") }}</p>
+                            </div>
+                            
+                            <!-- Uploaded Files Display -->
+                            <div id="uploaded-files" style="display: none;">
+                                <h6>{{ _("Uploaded Files:") }}</h6>
+                                <div id="files-list"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Validation Remarks -->
+                        <div id="validation-remarks-section" style="display: none;">
+                            <div class="alert alert-warning">
+                                <h6>{{ _("Validation Remarks") }}:</h6>
+                                <p id="validation-remarks-text"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Rejection Reason -->
+                        <div id="rejection-reason-section" style="display: none;">
+                            <div class="alert alert-danger">
+                                <h6>{{ _("Rejection Reason") }}:</h6>
+                                <p id="rejection-reason-text"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Warning Message -->
+                        <div class="alert alert-info">
+                            <i class="fa fa-exclamation-circle"></i>
+                            {{ _("Please ensure all information is accurate. The details will be validated through our verification service.") }}
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="form-group text-center">
+                            <a href="/vendor-portal" class="btn btn-secondary">
+                                <i class="fa fa-arrow-left"></i> {{ _("Back to Portal") }}
+                            </a>
+                            <button type="submit" id="submit-btn" class="btn btn-primary">
+                                <i class="fa fa-paper-plane"></i> {{ _("Submit for Validation") }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block style %}
+<style>
+.vendor-onboarding-form {
+    margin-bottom: 50px;
+}
+
+.card-header {
+    padding: 20px;
+}
+
+.form-group label {
+    font-weight: 600;
+}
+
+.text-danger {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block script %}
+<script>
+frappe.ready(function() {
+    var existingRequiredFiles = {
+        gstn_certificate: false,
+        pan_card: false,
+        bank_cheque: false
+    };
+
+    // Get onboarding ID from URL
+    var urlParams = new URLSearchParams(window.location.search);
+    var onboardingId = urlParams.get('id');
+    
+    if (!onboardingId) {
+        showError('Onboarding ID is required');
+        return;
+    }
+    
+    // Load onboarding data
+    loadOnboardingData(onboardingId);
+    
+    function loadOnboardingData(id) {
+        frappe.call({
+            method: 'addsol_vendor_onboarding.get_onboarding_form_data',
+            args: {
+                onboarding_id: id
+            },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    populateForm(r.message.doc);
+                } else {
+                    showError(r.message ? r.message.error : 'Failed to load onboarding data');
+                }
+            },
+            error: function() {
+                showError('An error occurred while loading the form');
+            }
+        });
+    }
+    
+    function populateForm(doc) {
+        // Hide loading, show form
+        $('#loading-message').hide();
+        $('#onboarding-form').show();
+        
+        // Set application ID
+        $('#application-id').text('{{ _("Application ID") }}: ' + doc.name);
+        $('#app-id-reference').text(doc.name);
+        
+        // Populate form fields
+        $('#onboarding_id').val(doc.name);
+        $('#gstn').val(doc.gstn || '');
+        $('#pan').val(doc.pan || '');
+        $('#bank_account_no').val(doc.bank_account_no || '');
+        $('#bank_ifsc_code').val(doc.bank_ifsc_code || '');
+        $('#udyog_aadhaar').val(doc.udyog_aadhaar || '');
+        $('#phone_number').val(doc.phone_number || '');
+
+        if (doc.existing_required_files) {
+            existingRequiredFiles = Object.assign(existingRequiredFiles, doc.existing_required_files);
+        }
+        
+        // Show validation remarks only for failed validation state
+        if (doc.onboarding_status === 'Validation Failed' && doc.validation_remarks) {
+            $('#validation-remarks-text').text(doc.validation_remarks);
+            $('#validation-remarks-section').show();
+        }
+        
+        // Show rejection reason if present
+        if (doc.rejection_reason) {
+            $('#rejection-reason-text').text(doc.rejection_reason);
+            $('#rejection-reason-section').show();
+        }
+    }
+    
+    function showError(message) {
+        $('#loading-message').hide();
+        $('#error-text').text(message);
+        $('#error-message').show();
+    }
+    
+    // Form submission
+    $('#onboarding-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate required files
+        var gstnFile = $('#gstn_certificate')[0].files[0];
+        var panFile = $('#pan_card')[0].files[0];
+        var bankFile = $('#bank_cheque')[0].files[0];
+        
+        var missingRequiredFiles = [];
+        if (!gstnFile && !existingRequiredFiles.gstn_certificate) {
+            missingRequiredFiles.push(__('GSTN Certificate'));
+        }
+        if (!panFile && !existingRequiredFiles.pan_card) {
+            missingRequiredFiles.push(__('PAN Card'));
+        }
+        if (!bankFile && !existingRequiredFiles.bank_cheque) {
+            missingRequiredFiles.push(__('Cancelled Cheque / Bank Statement'));
+        }
+
+        if (missingRequiredFiles.length) {
+            frappe.msgprint({
+                title: __('Validation Error'),
+                message: __('Please upload all required documents. Missing: {0}', [missingRequiredFiles.join(', ')]),
+                indicator: 'red'
+            });
+            return;
+        }
+        
+        // Validate file sizes (5MB max)
+        var maxSize = 5 * 1024 * 1024; // 5MB
+        var files = [gstnFile, panFile, bankFile, $('#udyog_aadhaar_certificate')[0].files[0]];
+        
+        for (var i = 0; i < files.length; i++) {
+            if (files[i] && files[i].size > maxSize) {
+                frappe.msgprint({
+                    title: __('File Size Error'),
+                    message: __('File size exceeds 5MB limit. Please compress your files.'),
+                    indicator: 'red'
+                });
+                return;
+            }
+        }
+        
+        // Show progress
+        $('#upload-progress').show();
+        $('#submit-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Uploading...');
+        
+        // Upload files first, then submit data
+        uploadFilesAndSubmit();
+    });
+    
+    function uploadFilesAndSubmit() {
+        var files_to_upload = [];
+        var file_inputs = ['gstn_certificate', 'pan_card', 'bank_cheque', 'udyog_aadhaar_certificate'];
+        
+        file_inputs.forEach(function(input_id) {
+            var file_input = $('#' + input_id)[0];
+            if (file_input && file_input.files[0]) {
+                files_to_upload.push({
+                    field: input_id,
+                    file: file_input.files[0]
+                });
+            }
+        });
+        
+        if (files_to_upload.length === 0) {
+            submitFormData([]);
+            return;
+        }
+        
+        var uploaded_files = [];
+        var upload_count = 0;
+        
+        files_to_upload.forEach(function(file_obj) {
+            uploadSingleFile(file_obj, function(file_doc) {
+                if (file_doc) {
+                    uploaded_files.push({
+                        field: file_obj.field,
+                        file_name: file_doc.file_name,
+                        file_url: file_doc.file_url
+                    });
+                }
+                
+                upload_count++;
+                var progress = (upload_count / files_to_upload.length) * 100;
+                $('.progress-bar').css('width', progress + '%');
+                
+                if (upload_count === files_to_upload.length) {
+                    submitFormData(uploaded_files);
+                }
+            });
+        });
+    }
+    
+    function uploadSingleFile(file_obj, callback) {
+        var filedata = new FormData();
+        filedata.append('file', file_obj.file);
+        filedata.append('doctype', 'Supplier Onboarding');
+        filedata.append('docname', $('#onboarding_id').val());
+        filedata.append('fieldname', file_obj.field);
+        filedata.append('is_private', 1);
+        
+        $.ajax({
+            type: 'POST',
+            url: '/api/method/upload_file',
+            data: filedata,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.message && response.message.file_url) {
+                    callback(response.message);
+                } else {
+                    callback(null);
+                }
+            },
+            error: function() {
+                callback(null);
+            }
+        });
+    }
+    
+    function submitFormData(uploaded_files) {
+        var data = {
+            onboarding_id: $('#onboarding_id').val(),
+            gstn: $('#gstn').val().toUpperCase(),
+            pan: $('#pan').val().toUpperCase(),
+            bank_account_no: $('#bank_account_no').val(),
+            bank_ifsc_code: $('#bank_ifsc_code').val().toUpperCase(),
+            udyog_aadhaar: $('#udyog_aadhaar').val(),
+            phone_number: $('#phone_number').val(),
+            uploaded_files: uploaded_files
+        };
+        
+        frappe.call({
+            method: 'addsol_vendor_onboarding.submit_onboarding_data',
+            args: {
+                onboarding_id: data.onboarding_id,
+                data: data
+            },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    frappe.msgprint({
+                        title: __('Success'),
+                        message: __('Your details and documents have been submitted successfully. Validation is in progress.'),
+                        indicator: 'green'
+                    });
+                    setTimeout(function() {
+                        window.location.href = '/vendor-portal';
+                    }, 2000);
+                } else {
+                    var errorMessage = __('Failed to submit. Please try again.');
+                    if (r.message) {
+                        if (r.message.message) {
+                            errorMessage = r.message.message;
+                        }
+                        if (r.message.errors && r.message.errors.length) {
+                            errorMessage += '<br><br><strong>' + __('Details') + ':</strong><br>- ' + r.message.errors.join('<br>- ');
+                        }
+                    }
+                    frappe.msgprint({
+                        title: __('Error'),
+                        message: errorMessage,
+                        indicator: 'red'
+                    });
+                    resetForm();
+                }
+            },
+            error: function() {
+                frappe.msgprint({
+                    title: __('Error'),
+                    message: __('An error occurred while submitting. Please try again.'),
+                    indicator: 'red'
+                });
+                resetForm();
+            }
+        });
+    }
+    
+    function resetForm() {
+        $('#upload-progress').hide();
+        $('.progress-bar').css('width', '0%');
+        $('#submit-btn').prop('disabled', false).html('<i class="fa fa-paper-plane"></i> {{ _("Submit for Validation") }}');
+    }
+    
+    // Update file labels when files are selected
+    $('.custom-file-input').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').html(fileName);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{
+  "actions": [],
+  "creation": "2025-01-26 10:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "api_section",
+    "api_url",
+    "client_id",
+    "column_break_3",
+    "client_secret",
+    "is_sandbox",
+    "section_break_5",
+    "enable_gstn_validation",
+    "enable_pan_validation",
+    "enable_bank_validation",
+    "column_break_9",
+    "enable_udyog_aadhaar_validation",
+    "retry_attempts",
+    "timeout"
+  ],
+  "fields": [
+    {
+      "fieldname": "api_section",
+      "fieldtype": "Section Break",
+      "label": "API Configuration"
+    },
+    {
+      "default": "https://api.cashfree.com",
+      "fieldname": "api_url",
+      "fieldtype": "Data",
+      "label": "API URL",
+      "reqd": 1
+    },
+    {
+      "fieldname": "client_id",
+      "fieldtype": "Data",
+      "label": "Client ID",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_3",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "client_secret",
+      "fieldtype": "Password",
+      "label": "Client Secret",
+      "reqd": 1
+    },
+    {
+      "default": "1",
+      "fieldname": "is_sandbox",
+      "fieldtype": "Check",
+      "label": "Is Sandbox"
+    },
+    {
+      "fieldname": "section_break_5",
+      "fieldtype": "Section Break",
+      "label": "Validation Settings"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_gstn_validation",
+      "fieldtype": "Check",
+      "label": "Enable GSTN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_pan_validation",
+      "fieldtype": "Check",
+      "label": "Enable PAN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_bank_validation",
+      "fieldtype": "Check",
+      "label": "Enable Bank Validation"
+    },
+    {
+      "fieldname": "column_break_9",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "fieldname": "enable_udyog_aadhaar_validation",
+      "fieldtype": "Check",
+      "label": "Enable Udyog Aadhaar Validation"
+    },
+    {
+      "default": "3",
+      "fieldname": "retry_attempts",
+      "fieldtype": "Int",
+      "label": "Retry Attempts"
+    },
+    {
+      "default": "30",
+      "fieldname": "timeout",
+      "fieldtype": "Int",
+      "label": "Timeout (seconds)"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2025-01-26 10:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Addsol Vendor Onboarding",
+  "name": "Cashfree Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

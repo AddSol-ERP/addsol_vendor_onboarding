@@ -1,0 +1,87 @@
+.attached-documents {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.attached-documents h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.attached-documents ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.attached-documents li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.attached-documents li:last-child {
+    border-bottom: none;
+}
+
+.attached-documents a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.attached-documents a:hover {
+    text-decoration: underline;
+}
+
+.supplier-onboarding-status {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.supplier-onboarding-status.approved {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.supplier-onboarding-status.rejected {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.supplier-onboarding-status.pending {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.validation-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.validation-badge.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.validation-badge.failed {
+    background-color: #dc3545;
+    color: white;
+}
+
+.validation-badge.pending {
+    background-color: #ffc107;
+    color: #333;
+}

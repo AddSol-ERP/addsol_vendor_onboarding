@@ -1,0 +1,294 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "format:SUP-ONB-{#####}",
+  "creation": "2025-01-26 10:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "supplier_section",
+    "supplier",
+    "supplier_name",
+    "column_break_3",
+    "onboarding_status",
+    "validation_status",
+    "workflow_state",
+    "section_break_5",
+    "gstn",
+    "pan",
+    "bank_account_no",
+    "bank_ifsc_code",
+    "column_break_10",
+    "udyog_aadhaar",
+    "phone_number",
+    "email",
+    "validation_section",
+    "gstn_validated",
+    "pan_validated",
+    "bank_validated",
+    "column_break_16",
+    "validation_date",
+    "validation_remarks",
+    "documents_section",
+    "documents_html",
+    "approval_section",
+    "purchase_manager",
+    "approved_by",
+    "approved_date",
+    "column_break_23",
+    "rejection_reason",
+    "re_verification_reason",
+    "amended_from"
+  ],
+  "fields": [
+    {
+      "fieldname": "supplier_section",
+      "fieldtype": "Section Break",
+      "label": "Supplier Information"
+    },
+    {
+      "fieldname": "supplier",
+      "fieldtype": "Link",
+      "label": "Supplier",
+      "options": "Supplier",
+      "reqd": 1
+    },
+    {
+      "fetch_from": "supplier.supplier_name",
+      "fieldname": "supplier_name",
+      "fieldtype": "Data",
+      "label": "Supplier Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_3",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "Pending Submission",
+      "fieldname": "onboarding_status",
+      "fieldtype": "Select",
+      "label": "Onboarding Status",
+      "options": "Pending Submission\nData Submitted\nValidation Failed\nValidation Successful\nApproved\nRejected",
+      "read_only": 1
+    },
+    {
+      "default": "Not Validated",
+      "fieldname": "validation_status",
+      "fieldtype": "Select",
+      "label": "Validation Status",
+      "options": "Not Validated\nIn Progress\nValidated\nFailed",
+      "read_only": 1
+    },
+    {
+      "fieldname": "workflow_state",
+      "fieldtype": "Link",
+      "label": "Workflow State",
+      "options": "Workflow State",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_5",
+      "fieldtype": "Section Break",
+      "label": "Mandatory Details"
+    },
+    {
+      "fieldname": "gstn",
+      "fieldtype": "Data",
+      "label": "GSTN",
+      "length": 15
+    },
+    {
+      "fieldname": "pan",
+      "fieldtype": "Data",
+      "label": "PAN",
+      "length": 10,
+      "uppercase": 1
+    },
+    {
+      "fieldname": "bank_account_no",
+      "fieldtype": "Data",
+      "label": "Bank Account Number"
+    },
+    {
+      "fieldname": "bank_ifsc_code",
+      "fieldtype": "Data",
+      "label": "Bank IFSC Code",
+      "length": 11,
+      "uppercase": 1
+    },
+    {
+      "fieldname": "column_break_10",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "udyog_aadhaar",
+      "fieldtype": "Data",
+      "label": "Udyog Aadhaar"
+    },
+    {
+      "fieldname": "phone_number",
+      "fieldtype": "Data",
+      "label": "Phone Number",
+      "options": "Phone"
+    },
+    {
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "label": "Email",
+      "options": "Email"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "validation_section",
+      "fieldtype": "Section Break",
+      "label": "Validation Details"
+    },
+    {
+      "default": "0",
+      "fieldname": "gstn_validated",
+      "fieldtype": "Check",
+      "label": "GSTN Validated",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "pan_validated",
+      "fieldtype": "Check",
+      "label": "PAN Validated",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "bank_validated",
+      "fieldtype": "Check",
+      "label": "Bank Account Validated",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_16",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "validation_date",
+      "fieldtype": "Datetime",
+      "label": "Validation Date",
+      "read_only": 1
+    },
+    {
+      "fieldname": "validation_remarks",
+      "fieldtype": "Text",
+      "label": "Validation Remarks",
+      "read_only": 1
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "documents_section",
+      "fieldtype": "Section Break",
+      "label": "Attached Documents"
+    },
+    {
+      "fieldname": "documents_html",
+      "fieldtype": "HTML",
+      "label": "Documents"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "approval_section",
+      "fieldtype": "Section Break",
+      "label": "Approval Details"
+    },
+    {
+      "fieldname": "purchase_manager",
+      "fieldtype": "Link",
+      "label": "Purchase Manager",
+      "options": "User"
+    },
+    {
+      "fieldname": "approved_by",
+      "fieldtype": "Link",
+      "label": "Approved By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "approved_date",
+      "fieldtype": "Datetime",
+      "label": "Approved Date",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_23",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "rejection_reason",
+      "fieldtype": "Text",
+      "label": "Rejection Reason"
+    },
+    {
+      "fieldname": "re_verification_reason",
+      "fieldtype": "Text",
+      "label": "Re-verification Reason"
+    },
+    {
+      "fieldname": "amended_from",
+      "fieldtype": "Link",
+      "label": "Amended From",
+      "options": "Supplier Onboarding",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "is_submittable": 0,
+  "links": [],
+  "modified": "2025-01-26 10:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Addsol Vendor Onboarding",
+  "name": "Supplier Onboarding",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Purchase Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Supplier",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "DeVoltrans Management",
+      "share": 1,
+      "submit": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1,
+  "track_seen": 1
+}

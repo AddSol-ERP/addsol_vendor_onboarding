@@ -1,0 +1,112 @@
+{
+  "actions": [],
+  "autoname": "format:VAL-LOG-{#####}",
+  "creation": "2025-01-26 10:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "supplier_onboarding",
+    "validation_type",
+    "validation_field",
+    "column_break_3",
+    "status",
+    "validation_datetime",
+    "section_break_6",
+    "request_data",
+    "response_data",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "supplier_onboarding",
+      "fieldtype": "Link",
+      "label": "Supplier Onboarding",
+      "options": "Supplier Onboarding",
+      "reqd": 1
+    },
+    {
+      "fieldname": "validation_type",
+      "fieldtype": "Select",
+      "label": "Validation Type",
+      "options": "GSTN\nPAN\nBank Account\nUdyog Aadhaar",
+      "reqd": 1
+    },
+    {
+      "fieldname": "validation_field",
+      "fieldtype": "Data",
+      "label": "Validation Field"
+    },
+    {
+      "fieldname": "column_break_3",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Success\nFailed\nPending",
+      "reqd": 1
+    },
+    {
+      "fieldname": "validation_datetime",
+      "fieldtype": "Datetime",
+      "label": "Validation Date & Time"
+    },
+    {
+      "collapsible": 1,
+      "fieldname": "section_break_6",
+      "fieldtype": "Section Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "request_data",
+      "fieldtype": "Long Text",
+      "label": "Request Data"
+    },
+    {
+      "fieldname": "response_data",
+      "fieldtype": "Long Text",
+      "label": "Response Data"
+    },
+    {
+      "fieldname": "error_message",
+      "fieldtype": "Text",
+      "label": "Error Message"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2025-01-26 10:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Addsol Vendor Onboarding",
+  "name": "Supplier Validation Log",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Purchase Manager",
+      "share": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

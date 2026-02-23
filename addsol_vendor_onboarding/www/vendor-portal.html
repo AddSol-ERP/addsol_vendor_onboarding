@@ -1,0 +1,489 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Vendor Onboarding Portal") }}{% endblock %}
+
+{% block page_content %}
+<div class="container vendor-portal py-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h1>{{ _("Vendor Onboarding Portal") }}</h1>
+                <p class="text-muted">{{ _("Manage your supplier onboarding applications") }}</p>
+            </div>
+            <hr>
+            
+            {% if access_denied %}
+            <div class="access-denied-message">
+                <div class="alert alert-warning">
+                    <div class="text-center">
+                        <i class="fa fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h3>{{ error_title }}</h3>
+                        <p class="lead">{{ error_message }}</p>
+                        <div class="mt-4">
+                            <p><strong>{{ _("Need help?") }}</strong></p>
+                            <a href="mailto:{{ support_email }}" class="btn btn-outline-primary">
+                                <i class="fa fa-envelope"></i> {{ _("Contact Support") }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div id="vendor-portal-content">
+                <div class="text-center">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">{{ _("Loading your vendor information...") }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+frappe.ready(function() {
+    {% if not access_denied %}
+    // Load vendor portal data using API
+    frappe.call({
+        method: 'addsol_vendor_onboarding.get_vendor_portal_data',
+        callback: function(r) {
+            if (r.message && r.message.supplier_found !== undefined) {
+                renderVendorPortal(r.message);
+            } else if (r.message && r.message.error) {
+                handleAccessError(r.message);
+            } else {
+                showError();
+            }
+        },
+        error: function(xhr, text_status, error_thrown) {
+            // Try to parse error response for better handling
+            try {
+                var error_response = JSON.parse(xhr.responseText);
+                if (error_response.exc_type && error_response.exc_type.includes('PermissionError')) {
+                    // Handle permission errors gracefully
+                    showAccessDenied();
+                } else {
+                    showError();
+                }
+            } catch(e) {
+                showError();
+            }
+        }
+    });
+    {% endif %}
+    
+    function handleAccessError(error_data) {
+        var content = '';
+        
+        if (error_data.error === 'login_required') {
+            content = '<div class="alert alert-warning">' +
+                '<i class="fa fa-lock"></i> ' +
+                '<h4>{{ _("Login Required") }}</h4>' +
+                '<p>' + error_data.message + '</p>' +
+                '<div class="mt-3">' +
+                '<a href="' + error_data.redirect_url + '" class="btn btn-primary">' +
+                '<i class="fa fa-sign-in"></i> {{ _("Login to Continue") }}' +
+                '</a>' +
+                '</div>' +
+                '</div>';
+        } else if (error_data.error === 'access_denied') {
+            content = '<div class="alert alert-danger">' +
+                '<i class="fa fa-exclamation-triangle"></i> ' +
+                '<h4>{{ _("Access Denied") }}</h4>' +
+                '<p>' + error_data.message + '</p>' +
+                '<div class="mt-3">' +
+                '<a href="' + error_data.redirect_url + '" class="btn btn-outline-danger">' +
+                '<i class="fa fa-info-circle"></i> {{ _("Learn More") }}' +
+                '</a>' +
+                '</div>' +
+                '</div>';
+        } else {
+            content = '<div class="alert alert-warning">' +
+                '<i class="fa fa-exclamation-triangle"></i> ' +
+                '<h4>{{ _("Access Issue") }}</h4>' +
+                '<p>' + (error_data.message || '{{ _("Unable to access vendor portal. Please contact support.") }}') + '</p>' +
+                '</div>';
+        }
+        
+        $('#vendor-portal-content').html(content);
+    }
+    
+    function showAccessDenied() {
+        var content = '<div class="alert alert-danger">' +
+            '<i class="fa fa-exclamation-triangle"></i> ' +
+            '<h4>{{ _("Access Restricted") }}</h4>' +
+            '<p>{{ _("This portal is only for registered suppliers. If you believe you should have access, please contact the support team.") }}</p>' +
+            '<div class="mt-3">' +
+            '<a href="/access-denied?message=supplier_portal" class="btn btn-outline-danger">' +
+            '<i class="fa fa-info-circle"></i> {{ _("Get Help") }}' +
+            '</a>' +
+            '</div>' +
+            '</div>';
+        
+        $('#vendor-portal-content').html(content);
+    }
+
+    function escapeHtml(value) {
+        if (!value) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function getProgressMessage(record) {
+        if (record.onboarding_status === 'Pending Submission') {
+            return '{{ _("Step 1 pending: Please submit your details and required documents.") }}';
+        }
+        if (record.onboarding_status === 'Data Submitted' || record.validation_status === 'In Progress') {
+            return '{{ _("Step 2 in progress: We are verifying your details. This may take a few minutes.") }}';
+        }
+        if (record.onboarding_status === 'Validation Failed') {
+            return '{{ _("Step 2 requires action: Please review the highlighted remarks, update details, and resubmit.") }}';
+        }
+        if (record.onboarding_status === 'Validation Successful') {
+            return '{{ _("Step 2 complete: Your details are verified. Step 3 (purchase team review) is in progress.") }}';
+        }
+        if (record.onboarding_status === 'Approved') {
+            return '{{ _("All steps completed: Your onboarding is approved.") }}';
+        }
+        if (record.onboarding_status === 'Rejected') {
+            return '{{ _("Step 3 completed with rejection. Please contact support for the next steps.") }}';
+        }
+        return '{{ _("Your onboarding request is being processed.") }}';
+    }
+
+    function getStepClass(state) {
+        if (state === 'done') return 'step-done';
+        if (state === 'active') return 'step-active';
+        if (state === 'failed') return 'step-failed';
+        return 'step-pending';
+    }
+
+    function renderVerificationChecks(record) {
+        var udyogSubmitted = String(record.udyog_aadhaar || '').trim().length > 0;
+        var checks = [
+            { label: '{{ _("GSTN") }}', passed: !!record.gstn_validated },
+            { label: '{{ _("PAN") }}', passed: !!record.pan_validated },
+            { label: '{{ _("Bank") }}', passed: !!record.bank_validated },
+            {
+                label: '{{ _("Udyog Aadhaar") }}',
+                passed: udyogSubmitted,
+                successText: '{{ _("Submitted") }}',
+                pendingText: '{{ _("Pending") }}'
+            }
+        ];
+        var html = '<div class="verification-checks">';
+        checks.forEach(function(check) {
+            var itemClass = check.passed ? 'check-pass' : 'check-pending';
+            var icon = check.passed ? 'fa-check-circle' : 'fa-circle-o';
+            var text = check.passed
+                ? (check.successText || '{{ _("Verified") }}')
+                : (check.pendingText || '{{ _("Pending") }}');
+            html += '<span class="verification-check ' + itemClass + '">' +
+                '<i class="fa ' + icon + '"></i> ' + check.label + ': ' + text +
+                '</span>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function renderProgressSteps(record) {
+        var step1 = 'pending';
+        var step2 = 'pending';
+        var step3 = 'pending';
+
+        if (record.onboarding_status !== 'Pending Submission') {
+            step1 = 'done';
+        }
+
+        if (record.onboarding_status === 'Validation Failed' || record.validation_status === 'Failed') {
+            step2 = 'failed';
+        } else if (
+            record.onboarding_status === 'Validation Successful' ||
+            record.onboarding_status === 'Approved' ||
+            record.validation_status === 'Validated'
+        ) {
+            step2 = 'done';
+        } else if (record.onboarding_status === 'Data Submitted' || record.validation_status === 'In Progress') {
+            step2 = 'active';
+        }
+
+        if (record.onboarding_status === 'Approved') {
+            step3 = 'done';
+        } else if (record.onboarding_status === 'Rejected') {
+            step3 = 'failed';
+        } else if (record.onboarding_status === 'Validation Successful') {
+            step3 = 'active';
+        }
+
+        return '<div class="progress-steps">' +
+            '<div class="progress-step ' + getStepClass(step1) + '">' +
+            '<span class="step-label">{{ _("Step 1: Submission") }}</span>' +
+            '</div>' +
+            '<div class="progress-step ' + getStepClass(step2) + '">' +
+            '<span class="step-label">{{ _("Step 2: Verification") }}</span>' +
+            '</div>' +
+            '<div class="progress-step ' + getStepClass(step3) + '">' +
+            '<span class="step-label">{{ _("Step 3: Approval Review") }}</span>' +
+            '</div>' +
+            '</div>';
+    }
+    
+    function renderVendorPortal(data) {
+        var content = '';
+        
+        if (data.supplier_found) {
+            content = '<div class="alert alert-info">' +
+                '<i class="fa fa-building"></i> <strong>{{ _("Supplier") }}:</strong> ' + data.supplier_name +
+                '</div>';
+            
+            if (data.onboarding_list && data.onboarding_list.length > 0) {
+                content += '<div class="card">' +
+                    '<div class="card-header">' +
+                    '<h4 class="mb-0">{{ _("Your Onboarding Applications") }}</h4>' +
+                    '</div>' +
+                    '<div class="card-body">';
+                
+                data.onboarding_list.forEach(function(record) {
+                    content += '<div class="onboarding-card mb-4 p-3 border rounded">' +
+                        '<div class="row">' +
+                        '<div class="col-md-8">' +
+                        '<h5>' + record.name + '</h5>' +
+                        '<p class="text-muted mb-2">' +
+                        '<small>{{ _("Created") }}: ' + new Date(record.creation).toLocaleString() + '</small>' +
+                        '</p>' +
+                        '<div class="progress-message alert alert-light">' + getProgressMessage(record) + '</div>' +
+                        renderProgressSteps(record) +
+                        renderVerificationChecks(record) +
+                        
+                        '<div class="status-badges mb-3">';
+                    
+                    // Status badges
+                    var statusClass = 'badge-secondary';
+                    if (record.onboarding_status === 'Approved') statusClass = 'badge-success';
+                    else if (record.onboarding_status === 'Rejected') statusClass = 'badge-danger';
+                    else if (record.onboarding_status === 'Validation Failed') statusClass = 'badge-warning';
+                    else if (record.onboarding_status === 'Validation Successful') statusClass = 'badge-info';
+                    
+                    content += '<span class="badge badge-lg ' + statusClass + '">' + record.onboarding_status + '</span>';
+                    
+                    var validationClass = 'badge-secondary';
+                    if (record.validation_status === 'Validated') validationClass = 'badge-success';
+                    else if (record.validation_status === 'Failed') validationClass = 'badge-danger';
+                    else if (record.validation_status === 'In Progress') validationClass = 'badge-warning';
+                    
+                    content += '<span class="badge badge-lg ' + validationClass + '">{{ _("Validation") }}: ' + record.validation_status + '</span>' +
+                        '</div>';
+                    
+                    // Validation remarks
+                    if (record.onboarding_status === 'Validation Failed' && record.validation_remarks) {
+                        content += '<div class="alert alert-warning">' +
+                            '<strong>{{ _("Validation Remarks") }}:</strong><br>' +
+                            escapeHtml(record.validation_remarks) +
+                            '</div>';
+                    }
+                    
+                    // Rejection reason
+                    if (record.rejection_reason) {
+                        content += '<div class="alert alert-danger">' +
+                            '<strong>{{ _("Rejection Reason") }}:</strong><br>' +
+                            escapeHtml(record.rejection_reason) +
+                            '</div>';
+                    }
+                    
+                    // Pending submission message
+                    if (record.onboarding_status === 'Pending Submission') {
+                        content += '<div class="alert alert-info">' +
+                            '<i class="fa fa-info-circle"></i> ' +
+                            '{{ _("Please submit your details to proceed with validation.") }}' +
+                            '</div>';
+                    }
+                    
+                    content += '</div>' +
+                        '<div class="col-md-4 text-right">';
+                    
+                    // Action buttons
+                    if (record.onboarding_status === 'Pending Submission' || record.onboarding_status === 'Validation Failed') {
+                        content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-primary btn-lg">' +
+                            '<i class="fa fa-edit"></i> {{ _("Submit Details") }}' +
+                            '</a>';
+                    } else if (record.onboarding_status === 'Data Submitted') {
+                        content += '<button class="btn btn-secondary btn-lg" disabled>' +
+                            '<i class="fa fa-clock-o"></i> {{ _("Validation in Progress") }}' +
+                            '</button>';
+                    } else if (record.onboarding_status === 'Validation Successful') {
+                        content += '<button class="btn btn-info btn-lg" disabled>' +
+                            '<i class="fa fa-check"></i> {{ _("Pending Approval") }}' +
+                            '</button>';
+                    } else if (record.onboarding_status === 'Approved') {
+                        content += '<button class="btn btn-success btn-lg" disabled>' +
+                            '<i class="fa fa-check-circle"></i> {{ _("Approved") }}' +
+                            '</button>';
+                    } else if (record.onboarding_status === 'Rejected') {
+                        content += '<button class="btn btn-danger btn-lg" disabled>' +
+                            '<i class="fa fa-times-circle"></i> {{ _("Rejected") }}' +
+                            '</button>';
+                    }
+                    
+                    content += '<div class="mt-3">' +
+                        '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-outline-secondary">' +
+                        '<i class="fa fa-eye"></i> {{ _("View Details") }}' +
+                        '</a>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>';
+                });
+                
+                content += '</div></div>';
+            } else {
+                content += '<div class="alert alert-warning">' +
+                    '<i class="fa fa-exclamation-triangle"></i> ' +
+                    '{{ _("No onboarding applications found. Please contact the Purchase team to initiate your onboarding.") }}' +
+                    '</div>';
+            }
+        } else {
+            content = '<div class="alert alert-danger">' +
+                '<i class="fa fa-exclamation-circle"></i> ' +
+                '{{ _("No supplier record found for your account. Please contact the administrator at contact@aitspl.com") }}' +
+                '</div>';
+        }
+        
+        $('#vendor-portal-content').html(content);
+    }
+    
+    function showError() {
+        $('#vendor-portal-content').html(
+            '<div class="alert alert-warning">' +
+            '<i class="fa fa-exclamation-triangle"></i> ' +
+            '{{ _("Unable to load vendor information. Please refresh the page or contact support.") }}' +
+            '</div>'
+        );
+    }
+});
+</script>
+{% endblock %}
+
+{% block style %}
+<style>
+.vendor-portal {
+    margin-top: 30px;
+    margin-bottom: 50px;
+}
+
+.vendor-portal .page-header h1 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.vendor-portal .page-header p {
+    font-size: 1.1em;
+}
+
+.onboarding-card {
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.onboarding-card:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.badge-lg {
+    font-size: 0.9em;
+    padding: 8px 12px;
+    margin-right: 8px;
+}
+
+.progress-message {
+    border-left: 4px solid #17a2b8;
+    margin-bottom: 12px;
+}
+
+.progress-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.progress-step {
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.85em;
+    border: 1px solid #ced4da;
+    background: #f8f9fa;
+}
+
+.progress-step.step-done {
+    border-color: #28a745;
+    background: #eaf7ef;
+    color: #1f7a34;
+}
+
+.progress-step.step-active {
+    border-color: #17a2b8;
+    background: #e8f7fb;
+    color: #0f6674;
+}
+
+.progress-step.step-failed {
+    border-color: #dc3545;
+    background: #fdecee;
+    color: #a71d2a;
+}
+
+.progress-step.step-pending {
+    border-color: #ced4da;
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.verification-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.verification-check {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 0.82em;
+    border: 1px solid #ced4da;
+}
+
+.verification-check.check-pass {
+    border-color: #28a745;
+    background: #eaf7ef;
+    color: #1f7a34;
+}
+
+.verification-check.check-pending {
+    border-color: #adb5bd;
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.help-section {
+    background: #e9ecef;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1em;
+}
+
+@media (max-width: 768px) {
+    .onboarding-card .text-right {
+        text-align: left !important;
+        margin-top: 15px;
+    }
+}
+</style>
+{% endblock %}

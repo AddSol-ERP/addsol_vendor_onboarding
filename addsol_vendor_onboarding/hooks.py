@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025, Addition Solutions and contributors
+# For license information, please see license.txt
+
+from __future__ import unicode_literals
+from frappe import _
+
 app_name = "addsol_vendor_onboarding"
 app_title = "Addsol Vendor Onboarding"
 app_publisher = "Addition Solutions"
@@ -117,13 +124,13 @@ app_license = "mit"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+    "Supplier Onboarding": "addsol_vendor_onboarding.utils.permission_query_conditions.get_supplier_onboarding_conditions"
+}
+
+has_permission = {
+    "Supplier Onboarding": "addsol_vendor_onboarding.utils.permission_query_conditions.has_supplier_onboarding_permission"
+}
 
 # DocType Class
 # ---------------
@@ -132,6 +139,21 @@ app_license = "mit"
 # override_doctype_class = {
 # 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
+
+doctype_js = {
+    "Purchase Order": "public/js/purchase_order.js",
+    "Supplier": "public/js/supplier.js"
+}
+
+doc_events = {
+    "Purchase Order": {
+        "validate": "addsol_vendor_onboarding.api.supplier_portal.validate_purchase_order"
+    },
+    "Supplier": {
+        "before_insert": "addsol_vendor_onboarding.api.supplier_portal.disable_new_supplier",
+        "validate": "addsol_vendor_onboarding.api.supplier_portal.validate_supplier_email"
+    }
+}
 
 # Document Events
 # ---------------
@@ -242,3 +264,11 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+# Configuration for extending Buying module
+extend_bootinfo = "addsol_vendor_onboarding.boot.boot_session"
+
+# Add links to other modules
+# This will add Vendor Onboarding items to Buying workspace
+additional_timeline_content = {
+    "Supplier": ["addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.supplier_onboarding.supplier_onboarding.get_timeline_data"]
+}
