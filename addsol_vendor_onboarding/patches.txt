@@ -6,3 +6,5 @@
 # Patches added in this section will be executed after doctypes are migrated
 addsol_vendor_onboarding.patches.deduplicate_supplier_onboarding_attachments
 addsol_vendor_onboarding.patches.reconcile_supplier_onboarding_validation_states
+addsol_vendor_onboarding.patches.force_sync_vendor_onboarding_workspace
+addsol_vendor_onboarding.patches.cleanup_vendor_onboarding_private_workspaces

@@ -10,7 +10,7 @@
   "icon": "organization",
   "idx": 0,
   "is_hidden": 0,
-  "label": "Supplier Onboarding",
+  "label": "Vendor Onboarding",
   "links": [
     {
       "hidden": 0,
@@ -143,5 +143,5 @@
       "type": "DocType"
     }
   ],
-  "title": "Supplier Onboarding"
+  "title": "Vendor Onboarding"
 }
