@@ -8,6 +8,10 @@ from addsol_vendor_onboarding.utils.validation_utils import (
     validate_ifsc_format,
     validate_phone_format,
 )
+from addsol_vendor_onboarding.services.verification_provider import (
+    get_provider_settings,
+    is_validation_enabled,
+)
 
 
 REQUIRED_UPLOAD_FIELDS = ("gstn_certificate", "pan_card", "bank_cheque")
@@ -310,15 +314,15 @@ def _reconcile_single_supplier_onboarding(doc, settings):
     latest_statuses, latest_success_datetime = _latest_validation_log_statuses(doc.name)
 
     checks = [
-        ("GSTN", "gstn_validated", "gstn", bool(settings.enable_gstn_validation)),
-        ("PAN", "pan_validated", "pan", bool(settings.enable_pan_validation)),
-        ("CIN", "cin_validated", "cin", bool(settings.enable_cin_validation)),
-        ("Bank Account", "bank_validated", "bank_account_no", bool(settings.enable_bank_validation)),
+        ("GSTN", "gstn_validated", "gstn", is_validation_enabled("gstn", settings_doc=settings)),
+        ("PAN", "pan_validated", "pan", is_validation_enabled("pan", settings_doc=settings)),
+        ("CIN", "cin_validated", "cin", is_validation_enabled("cin", settings_doc=settings)),
+        ("Bank Account", "bank_validated", "bank_account_no", is_validation_enabled("bank", settings_doc=settings)),
         (
             "Udyog Aadhaar",
             "udyam_validated",
             "udyog_aadhaar",
-            bool(settings.enable_udyog_aadhaar_validation),
+            is_validation_enabled("udyam", settings_doc=settings),
         ),
     ]
 
@@ -410,7 +414,7 @@ def _reconcile_single_supplier_onboarding(doc, settings):
 
 
 def _reconcile_supplier_onboarding_validation_states():
-    settings = frappe.get_single("Cashfree Settings")
+    settings = get_provider_settings()
     onboarding_names = frappe.get_all(
         "Supplier Onboarding",
         filters={
@@ -479,7 +483,7 @@ def reconcile_supplier_onboarding_validation_state(supplier_onboarding):
     if doc.docstatus == 2:
         frappe.throw(_("Cannot reconcile cancelled Supplier Onboarding records"))
 
-    settings = frappe.get_single("Cashfree Settings")
+    settings = get_provider_settings()
     reconcile_result = _reconcile_single_supplier_onboarding(doc, settings)
     frappe.db.commit()
 

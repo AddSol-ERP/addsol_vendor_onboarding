@@ -9,7 +9,7 @@ from addsol_vendor_onboarding import __version__ as version
 setup(
     name="addsol_vendor_onboarding",
     version=version,
-    description="Custom vendor onboarding with automated validation via Cashfree APIs",
+    description="Custom supplier onboarding with pluggable verification providers",
     author="Addition Solutions",
     author_email="conatct@aitspl.com",
     packages=find_packages(),

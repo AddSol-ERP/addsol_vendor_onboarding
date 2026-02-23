@@ -1,0 +1,132 @@
+{
+  "actions": [],
+  "creation": "2026-02-23 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "template_info",
+    "api_url",
+    "api_key",
+    "column_break_1",
+    "api_secret",
+    "is_enabled",
+    "section_break_2",
+    "enable_gstn_validation",
+    "enable_pan_validation",
+    "enable_cin_validation",
+    "enable_bank_validation",
+    "column_break_3",
+    "enable_udyog_aadhaar_validation",
+    "retry_attempts",
+    "timeout"
+  ],
+  "fields": [
+    {
+      "fieldname": "template_info",
+      "fieldtype": "HTML",
+      "label": "Template Info"
+    },
+    {
+      "default": "https://api.placeholder.local/verification",
+      "fieldname": "api_url",
+      "fieldtype": "Data",
+      "label": "API URL",
+      "reqd": 1
+    },
+    {
+      "fieldname": "api_key",
+      "fieldtype": "Data",
+      "label": "API Key"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "api_secret",
+      "fieldtype": "Password",
+      "label": "API Secret"
+    },
+    {
+      "default": "0",
+      "fieldname": "is_enabled",
+      "fieldtype": "Check",
+      "label": "Provider Enabled"
+    },
+    {
+      "fieldname": "section_break_2",
+      "fieldtype": "Section Break",
+      "label": "Validation Settings"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_gstn_validation",
+      "fieldtype": "Check",
+      "label": "Enable GSTN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_pan_validation",
+      "fieldtype": "Check",
+      "label": "Enable PAN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_cin_validation",
+      "fieldtype": "Check",
+      "label": "Enable CIN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_bank_validation",
+      "fieldtype": "Check",
+      "label": "Enable Bank Validation"
+    },
+    {
+      "fieldname": "column_break_3",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "fieldname": "enable_udyog_aadhaar_validation",
+      "fieldtype": "Check",
+      "label": "Enable Udyog Aadhaar Validation"
+    },
+    {
+      "default": "3",
+      "fieldname": "retry_attempts",
+      "fieldtype": "Int",
+      "label": "Retry Attempts"
+    },
+    {
+      "default": "30",
+      "fieldname": "timeout",
+      "fieldtype": "Int",
+      "label": "Timeout (seconds)"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-02-23 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Addsol Vendor Onboarding",
+  "name": "Dummy Provider Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

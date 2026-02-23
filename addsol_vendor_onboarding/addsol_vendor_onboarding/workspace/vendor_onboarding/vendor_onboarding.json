@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"id\":\"vendor_kpi_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Status Overview</b></span>\",\"col\":12}},{\"id\":\"approved_suppliers_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Approved Suppliers\",\"col\":3}},{\"id\":\"pending_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Onboarding\",\"col\":3}},{\"id\":\"rejected_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rejected Onboarding\",\"col\":3}},{\"id\":\"awaiting_approval_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Verification Passed - Awaiting Approval\",\"col\":3}},{\"id\":\"vendor_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_shortcuts_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Links</b></span>\",\"col\":12}},{\"id\":\"supplier_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier List\",\"col\":3}},{\"id\":\"supplier_onboarding_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Onboarding List\",\"col\":3}},{\"id\":\"supplier_validation_log_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Validation Logs List\",\"col\":3}},{\"id\":\"verification_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cashfree Settings List\",\"col\":3}},{\"id\":\"vendor_spacer_2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_cards_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operations</b></span>\",\"col\":12}},{\"id\":\"onboarding_requests_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Onboarding Requests\",\"col\":4}},{\"id\":\"validation_logs_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Validation Logs\",\"col\":4}},{\"id\":\"supplier_master_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Master\",\"col\":4}},{\"id\":\"settings_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}}]",
+  "content": "[{\"id\":\"vendor_kpi_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Status Overview</b></span>\",\"col\":12}},{\"id\":\"approved_suppliers_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Approved Suppliers\",\"col\":3}},{\"id\":\"pending_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Onboarding\",\"col\":3}},{\"id\":\"rejected_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rejected Onboarding\",\"col\":3}},{\"id\":\"awaiting_approval_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Verification Passed - Awaiting Approval\",\"col\":3}},{\"id\":\"vendor_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_shortcuts_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Links</b></span>\",\"col\":12}},{\"id\":\"supplier_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier List\",\"col\":3}},{\"id\":\"supplier_onboarding_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Onboarding List\",\"col\":3}},{\"id\":\"supplier_validation_log_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Validation Logs List\",\"col\":3}},{\"id\":\"verification_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vendor Verification Settings\",\"col\":3}},{\"id\":\"cashfree_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cashfree Settings List\",\"col\":3}},{\"id\":\"dummy_provider_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dummy Provider Settings List\",\"col\":3}},{\"id\":\"vendor_spacer_2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_cards_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operations</b></span>\",\"col\":12}},{\"id\":\"onboarding_requests_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Onboarding Requests\",\"col\":4}},{\"id\":\"validation_logs_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Validation Logs\",\"col\":4}},{\"id\":\"supplier_master_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Master\",\"col\":4}},{\"id\":\"settings_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}},{\"id\":\"vendor_spacer_3\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_docs_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Documentation</b></span>\",\"col\":12}},{\"id\":\"docs_readme_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Read Me\",\"col\":3}},{\"id\":\"docs_provider_template_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Provider Template\",\"col\":3}},{\"id\":\"docs_pm_manual_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"User Manual - Purchase Manager\",\"col\":3}},{\"id\":\"docs_supplier_manual_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"User Manual - Supplier\",\"col\":3}},{\"id\":\"docs_onboarding_form_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vendor Onboarding Form\",\"col\":3}}]",
   "creation": "2025-01-27 12:00:00.000000",
   "custom_blocks": [],
   "docstatus": 0,
@@ -77,12 +77,40 @@
     {
       "hidden": 0,
       "is_query_report": 0,
+      "label": "Vendor Verification Settings",
+      "link_count": 0,
+      "link_to": "Vendor Verification Settings",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
       "label": "Cashfree Settings",
       "link_count": 0,
       "link_to": "Cashfree Settings",
       "link_type": "DocType",
       "onboard": 0,
       "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Dummy Provider Settings",
+      "link_count": 0,
+      "link_to": "Dummy Provider Settings",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Documentation",
+      "link_count": 0,
+      "onboard": 0,
+      "type": "Card Break"
     }
   ],
   "modified": "2025-01-27 12:00:00.000000",
@@ -108,7 +136,7 @@
     }
   ],
   "owner": "Administrator",
-  "parent_page": "",
+  "parent_page": "Buying",
   "public": 1,
   "quick_lists": [],
   "roles": [],
@@ -138,9 +166,58 @@
     {
       "color": "Orange",
       "doc_view": "List",
+      "label": "Vendor Verification Settings",
+      "link_to": "Vendor Verification Settings",
+      "type": "DocType"
+    },
+    {
+      "color": "Yellow",
+      "doc_view": "List",
       "label": "Cashfree Settings List",
       "link_to": "Cashfree Settings",
       "type": "DocType"
+    },
+    {
+      "color": "Purple",
+      "doc_view": "List",
+      "label": "Dummy Provider Settings List",
+      "link_to": "Dummy Provider Settings",
+      "type": "DocType"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "Read Me",
+      "type": "URL",
+      "url": "/assets/addsol_vendor_onboarding/docs/README.md"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "Provider Template",
+      "type": "URL",
+      "url": "/assets/addsol_vendor_onboarding/docs/Provider_Template.md"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "User Manual - Purchase Manager",
+      "type": "URL",
+      "url": "/purchase-manager-user-manual"
+    },
+    {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "User Manual - Supplier",
+      "type": "URL",
+      "url": "/supplier-user-manual"
+    },
+    {
+      "color": "Blue",
+      "doc_view": "List",
+      "label": "Vendor Onboarding Form",
+      "type": "URL",
+      "url": "/vendor-onboarding-form"
     }
   ],
   "title": "Vendor Onboarding"

@@ -30,9 +30,21 @@ def get_data():
                 },
                 {
                     "type": "doctype",
+                    "name": "Vendor Verification Settings",
+                    "label": _("Vendor Verification Settings"),
+                    "description": _("Select verification provider and manage provider routing"),
+                },
+                {
+                    "type": "doctype",
                     "name": "Cashfree Settings",
                     "label": _("Cashfree Settings"),
-                    "description": _("Configure Cashfree API settings"),
+                    "description": _("Configure Cashfree provider credentials"),
+                },
+                {
+                    "type": "doctype",
+                    "name": "Dummy Provider Settings",
+                    "label": _("Dummy Provider Settings"),
+                    "description": _("Template settings for future provider integrations"),
                 },
             ]
         },

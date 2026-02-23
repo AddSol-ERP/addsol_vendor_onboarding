@@ -21,8 +21,11 @@ from addsol_vendor_onboarding.utils.email_utils import (
     send_approval_email,
     send_rejection_email,
 )
-from addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.cashfree_settings.cashfree_settings import (
+from addsol_vendor_onboarding.services.verification_provider import (
+    enqueue_supplier_validation,
+    get_active_provider_config,
     get_disabled_mandatory_validations,
+    get_provider_settings,
 )
 
 PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
@@ -71,12 +74,12 @@ def _is_admin_verification_user():
     return bool(ADMIN_VERIFICATION_ROLES & set(frappe.get_roles()))
 
 
-def _build_verification_block_message(disabled_mandatory):
+def _build_verification_block_message(disabled_mandatory, provider_label, settings_doctype):
     if _is_admin_verification_user():
         return _(
-            "Cannot start verification because mandatory Cashfree validations are disabled: {0}. "
-            "Please enable them in Cashfree Settings and try again."
-        ).format(", ".join(disabled_mandatory))
+            "Cannot start verification because mandatory {0} validations are disabled: {1}. "
+            "Please enable them in {2} and try again."
+        ).format(provider_label, ", ".join(disabled_mandatory), settings_doctype)
     return _(
         "Verification cannot be started right now due to configuration issues. "
         "Please contact support."
@@ -84,11 +87,16 @@ def _build_verification_block_message(disabled_mandatory):
 
 
 def _ensure_mandatory_validations_enabled_for_submission():
-    settings = frappe.get_single("Cashfree Settings")
-    disabled_mandatory = get_disabled_mandatory_validations(settings)
+    provider = get_active_provider_config()
+    settings = get_provider_settings()
+    disabled_mandatory = get_disabled_mandatory_validations(settings_doc=settings)
     if disabled_mandatory:
         frappe.throw(
-            _build_verification_block_message(disabled_mandatory),
+            _build_verification_block_message(
+                disabled_mandatory,
+                provider.get("label"),
+                provider.get("settings_doctype"),
+            ),
             title=_("Verification Blocked"),
         )
 
@@ -219,7 +227,7 @@ class SupplierOnboarding(Document):
                 frappe.msgprint(_("Warning: Could not send login credentials. Please check user setup manually."))
     
     def trigger_validation(self):
-        """Trigger Cashfree API validation."""
+        """Trigger provider-based API validation."""
         try:
             _ensure_mandatory_validations_enabled_for_submission()
 
@@ -248,16 +256,10 @@ class SupplierOnboarding(Document):
                     title=f"Failed to send validation started email for {self.name}"
                 )
             
-            # Enqueue validation to run in background
-            frappe.enqueue(
-                method="addsol_vendor_onboarding.api.cashfree_api.validate_supplier_details",
-                queue="default",
-                timeout=300,
-                is_async=True,
-                **{
-                    "supplier_onboarding": self.name,
-                    "validation_requested_at": validation_requested_at,
-                }
+            # Enqueue validation with selected provider.
+            enqueue_supplier_validation(
+                supplier_onboarding=self.name,
+                validation_requested_at=validation_requested_at,
             )
             
             frappe.msgprint(_(
@@ -368,11 +370,16 @@ class SupplierOnboarding(Document):
         if self.onboarding_status != "Approved":
             frappe.throw(_("Only approved suppliers can be re-verified"))
 
-        settings = frappe.get_single("Cashfree Settings")
-        disabled_mandatory = get_disabled_mandatory_validations(settings)
+        provider = get_active_provider_config()
+        settings = get_provider_settings()
+        disabled_mandatory = get_disabled_mandatory_validations(settings_doc=settings)
         if disabled_mandatory:
             frappe.throw(
-                _build_verification_block_message(disabled_mandatory),
+                _build_verification_block_message(
+                    disabled_mandatory,
+                    provider.get("label"),
+                    provider.get("settings_doctype"),
+                ),
                 title=_("Verification Blocked"),
             )
         

@@ -9,9 +9,17 @@
             <div class="page-header">
                 <h1>{{ _("Supplier Onboarding Portal") }}</h1>
                 <p class="text-muted">{{ _("Manage your supplier onboarding applications") }}</p>
-                <div class="mt-3">
-                    <a href="/me" class="btn btn-outline-secondary">
+                <div class="mt-3 portal-action-row">
+                    <a href="/me" class="btn portal-action-btn portal-home-btn">
                         <i class="fa fa-home"></i> {{ _("Back to Home") }}
+                    </a>
+                    <a
+                        href="/supplier-user-manual"
+                        class="btn portal-action-btn portal-manual-btn ml-2"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <i class="fa fa-book"></i> {{ _("Supplier User Manual") }}
                     </a>
                 </div>
             </div>
@@ -457,6 +465,50 @@ frappe.ready(function() {
 
 .vendor-portal .page-header p {
     font-size: 1.1em;
+}
+
+.portal-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.portal-action-btn {
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 16px;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.portal-action-btn i {
+    margin-right: 6px;
+}
+
+.portal-home-btn {
+    background: #1f2937;
+    border-color: #111827;
+    color: #fff;
+}
+
+.portal-home-btn:hover,
+.portal-home-btn:focus {
+    background: #111827;
+    border-color: #0b1220;
+    color: #fff;
+}
+
+.portal-manual-btn {
+    background: #0b5ed7;
+    border-color: #0a58ca;
+    color: #fff;
+}
+
+.portal-manual-btn:hover,
+.portal-manual-btn:focus {
+    background: #094cb3;
+    border-color: #084298;
+    color: #fff;
 }
 
 .onboarding-card {

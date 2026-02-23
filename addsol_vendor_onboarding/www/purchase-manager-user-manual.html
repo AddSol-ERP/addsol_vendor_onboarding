@@ -1,0 +1,107 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Purchase Manager User Manual") }}{% endblock %}
+
+{% block page_content %}
+<div class="container manual-page py-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="manual-header mb-4">
+                <h1>{{ _("Purchase Manager User Manual") }}</h1>
+                <p class="text-muted mb-0">{{ _("Step-by-step guide to manage supplier onboarding lifecycle.") }}</p>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("Quick Navigation") }}</h4>
+                    <ul>
+                        <li><a href="/app/vendor-onboarding">{{ _("Vendor Onboarding Workspace") }}</a></li>
+                        <li><a href="/app/vendor-verification-settings">{{ _("Vendor Verification Settings") }}</a></li>
+                        <li><a href="/app/cashfree-settings">{{ _("Cashfree Settings") }}</a></li>
+                        <li><a href="/app/supplier-onboarding">{{ _("Supplier Onboarding List") }}</a></li>
+                        <li><a href="/app/supplier-validation-log">{{ _("Supplier Validation Logs") }}</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("1. Configure Verification Setup") }}</h4>
+                    <ol>
+                        <li>{{ _("Open Vendor Verification Settings and select active provider.") }}</li>
+                        <li>{{ _("Open provider settings and configure API credentials.") }}</li>
+                        <li>{{ _("Keep mandatory checks enabled: GSTN, PAN, Bank Account.") }}</li>
+                        <li>{{ _("Use Test Connection button to confirm connectivity.") }}</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("2. Create and Initiate Onboarding") }}</h4>
+                    <ol>
+                        <li>{{ _("Create or confirm Supplier master record.") }}</li>
+                        <li>{{ _("Create Supplier Onboarding record with supplier and email.") }}</li>
+                        <li>{{ _("Share supplier portal/form links with supplier.") }}</li>
+                    </ol>
+                    <p class="mb-0"><strong>{{ _("Supplier form URL:") }}</strong> <a href="/vendor-onboarding-form">/vendor-onboarding-form</a></p>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("3. Monitor Verification") }}</h4>
+                    <ul>
+                        <li>{{ _("Track status in Supplier Onboarding list.") }}</li>
+                        <li>{{ _("Use Supplier Validation Logs for check-level details.") }}</li>
+                        <li>{{ _("Expected status flow: Pending Submission -> Data Submitted -> Validation Successful/Failed -> Approved/Rejected.") }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("4. Handle Failures") }}</h4>
+                    <ol>
+                        <li>{{ _("Open failed onboarding record.") }}</li>
+                        <li>{{ _("Review detailed failure reason in validation logs.") }}</li>
+                        <li>{{ _("Ask supplier to correct details/documents and resubmit.") }}</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("5. Final Decision") }}</h4>
+                    <ul>
+                        <li>{{ _("Approve only after Validation Successful.") }}</li>
+                        <li>{{ _("Use Reject action with clear reason when required.") }}</li>
+                        <li>{{ _("Use re-verification if supplier changes critical details after approval.") }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm">
+                <div class="card-body">
+                    <h4>{{ _("Best Practices") }}</h4>
+                    <ul class="mb-0">
+                        <li>{{ _("Do not disable mandatory validations without approval.") }}</li>
+                        <li>{{ _("Confirm provider configuration before raising support issues.") }}</li>
+                        <li>{{ _("Use Dummy Provider only as development template, not production.") }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block style %}
+<style>
+.manual-page h1 { color: #1f2937; font-weight: 700; }
+.manual-card { border: 1px solid #e5e7eb; border-radius: 12px; }
+.manual-card h4 { color: #111827; margin-bottom: 12px; }
+.manual-card ul, .manual-card ol { margin-bottom: 0; }
+.manual-card li { margin-bottom: 6px; }
+</style>
+{% endblock %}

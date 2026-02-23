@@ -1,0 +1,92 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Supplier User Manual") }}{% endblock %}
+
+{% block page_content %}
+<div class="container manual-page py-5">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="manual-header mb-4">
+                <h1>{{ _("Supplier User Manual") }}</h1>
+                <p class="text-muted mb-0">{{ _("Complete onboarding steps for suppliers.") }}</p>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("Important Links") }}</h4>
+                    <ul>
+                        <li><a href="/vendor-onboarding-form">{{ _("Onboarding Form") }}</a></li>
+                        <li><a href="/vendor-portal">{{ _("Supplier Portal") }}</a></li>
+                        <li><a href="/login">{{ _("Login") }}</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("1. Login and Open Onboarding") }}</h4>
+                    <ol>
+                        <li>{{ _("Login using credentials shared by Purchase team.") }}</li>
+                        <li>{{ _("Open your onboarding record from supplier portal/form.") }}</li>
+                        <li>{{ _("Confirm status is Pending Submission or Validation Failed.") }}</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("2. Fill Correct Details") }}</h4>
+                    <ul>
+                        <li>{{ _("GSTN") }}</li>
+                        <li>{{ _("PAN") }}</li>
+                        <li>{{ _("Bank Account Number and IFSC") }}</li>
+                        <li>{{ _("CIN / LLPIN (if applicable)") }}</li>
+                        <li>{{ _("Udyam Registration Number (if applicable)") }}</li>
+                    </ul>
+                    <p class="mb-0"><strong>{{ _("Tip:") }}</strong> {{ _("Use exact values from official documents. Avoid spaces and spelling errors.") }}</p>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("3. Upload Required Documents") }}</h4>
+                    <ul>
+                        <li>{{ _("GSTN Certificate") }}</li>
+                        <li>{{ _("PAN Card") }}</li>
+                        <li>{{ _("Cancelled Cheque / Bank Proof") }}</li>
+                    </ul>
+                    <p class="mb-0">{{ _("Optional: CIN Certificate, Udyam Certificate, Company Logo") }}</p>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("4. Submit and Track Status") }}</h4>
+                    <ul>
+                        <li>{{ _("Submit details for verification.") }}</li>
+                        <li>{{ _("Track status: Data Submitted -> Validation Successful/Failed -> Approved.") }}</li>
+                        <li>{{ _("If failed, correct details and resubmit.") }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm">
+                <div class="card-body">
+                    <h4>{{ _("Need Help?") }}</h4>
+                    <p class="mb-0">{{ _("Contact your Purchase Manager with onboarding record ID and screenshot of issue.") }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block style %}
+<style>
+.manual-page h1 { color: #1f2937; font-weight: 700; }
+.manual-card { border: 1px solid #e5e7eb; border-radius: 12px; }
+.manual-card h4 { color: #111827; margin-bottom: 12px; }
+.manual-card ul, .manual-card ol { margin-bottom: 0; }
+.manual-card li { margin-bottom: 6px; }
+</style>
+{% endblock %}
