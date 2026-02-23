@@ -202,6 +202,7 @@ function set_field_properties(frm) {
     if (frm.doc.onboarding_status === 'Approved') {
         frm.set_df_property('gstn', 'read_only', 1);
         frm.set_df_property('pan', 'read_only', 1);
+        frm.set_df_property('cin', 'read_only', 1);
         frm.set_df_property('bank_account_no', 'read_only', 1);
         frm.set_df_property('bank_ifsc_code', 'read_only', 1);
         frm.set_df_property('udyog_aadhaar', 'read_only', 1);
@@ -210,6 +211,7 @@ function set_field_properties(frm) {
     } else {
         frm.set_df_property('gstn', 'read_only', 0);
         frm.set_df_property('pan', 'read_only', 0);
+        frm.set_df_property('cin', 'read_only', 0);
         frm.set_df_property('bank_account_no', 'read_only', 0);
         frm.set_df_property('bank_ifsc_code', 'read_only', 0);
         frm.set_df_property('udyog_aadhaar', 'read_only', 0);

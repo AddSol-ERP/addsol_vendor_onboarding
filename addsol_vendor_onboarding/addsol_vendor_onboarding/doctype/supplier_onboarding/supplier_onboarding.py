@@ -5,9 +5,11 @@ from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
 from frappe import _
+from frappe.utils import cint
 from addsol_vendor_onboarding.utils.validation_utils import (
     validate_gstn_format,
     validate_pan_format,
+    validate_cin_format,
     validate_ifsc_format,
     validate_phone_format
 )
@@ -24,6 +26,7 @@ PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
     "We could not validate your submitted details at this time. "
     "Please review and resubmit, or contact support."
 )
+VENDOR_EDITABLE_ONBOARDING_STATUSES = ("Pending Submission", "Validation Failed", "Rejected")
 
 
 def _public_validation_failure_message(error_message):
@@ -34,8 +37,12 @@ def _public_validation_failure_message(error_message):
         failed_sections.append(_("GSTN details"))
     if "pan" in message:
         failed_sections.append(_("PAN details"))
+    if "cin" in message:
+        failed_sections.append(_("CIN details"))
     if "bank" in message:
         failed_sections.append(_("Bank details"))
+    if "udyam" in message or "udyog" in message:
+        failed_sections.append(_("Udyam details"))
 
     if failed_sections:
         if len(failed_sections) == 1:
@@ -43,9 +50,7 @@ def _public_validation_failure_message(error_message):
         elif len(failed_sections) == 2:
             section_text = _("{0} and {1}").format(failed_sections[0], failed_sections[1])
         else:
-            section_text = _("{0}, {1} and {2}").format(
-                failed_sections[0], failed_sections[1], failed_sections[2]
-            )
+            section_text = _("{0}, and {1}").format(", ".join(failed_sections[:-1]), failed_sections[-1])
         return _(
             "{0} could not be verified. Please review and resubmit, or contact support."
         ).format(section_text)
@@ -59,6 +64,39 @@ def _assert_onboarding_manager():
 
 
 class SupplierOnboarding(Document):
+
+    def _latest_attachment_url(self, attached_field):
+        file_url = frappe.db.get_value(
+            "File",
+            {
+                "attached_to_doctype": self.doctype,
+                "attached_to_name": self.name,
+                "attached_to_field": attached_field,
+                "is_folder": 0,
+            },
+            "file_url",
+            order_by="modified desc",
+        )
+        return file_url
+
+    def _send_credentials_if_needed(self, force=False):
+        """Send credentials once unless explicitly forced."""
+        if not (self.supplier and self.email):
+            return False, _("Supplier email is missing")
+
+        if cint(self.credentials_email_sent) and not force:
+            return False, _("Login credentials were already sent")
+
+        send_supplier_credentials(self)
+        frappe.db.set_value(
+            self.doctype,
+            self.name,
+            "credentials_email_sent",
+            1,
+            update_modified=False,
+        )
+        self.credentials_email_sent = 1
+        return True, _("Login credentials sent to supplier")
     
     def validate(self):
         """Validate the document before saving."""
@@ -93,8 +131,8 @@ class SupplierOnboarding(Document):
         """Send login credentials to supplier after creation."""
         if self.supplier and self.email:
             try:
-                send_supplier_credentials(self)
-                frappe.msgprint(_("Login credentials sent to supplier"))
+                sent, message = self._send_credentials_if_needed()
+                frappe.msgprint(message)
             except frappe.exceptions.DuplicateEntryError:
                 # User already exists, continue with onboarding
                 frappe.clear_messages()
@@ -121,11 +159,24 @@ class SupplierOnboarding(Document):
             self.onboarding_status == "Data Submitted"):
             self.trigger_validation()
         
-        # Send credentials if email is added and credentials haven't been sent yet
+        # Avoid re-sending during insert lifecycle; on first save there is no previous doc.
+        if not self.get_doc_before_save():
+            return
+
+        # Send credentials if email is added/changed later.
         if (self.has_value_changed("email") and self.email and self.supplier):
             try:
-                send_supplier_credentials(self)
-                frappe.msgprint(_("Login credentials sent to supplier"))
+                # New email should receive fresh credentials.
+                frappe.db.set_value(
+                    self.doctype,
+                    self.name,
+                    "credentials_email_sent",
+                    0,
+                    update_modified=False,
+                )
+                self.credentials_email_sent = 0
+                sent, message = self._send_credentials_if_needed()
+                frappe.msgprint(message)
             except frappe.exceptions.DuplicateEntryError:
                 frappe.clear_messages()
                 frappe.msgprint(_("Supplier user already exists. Onboarding process continued."))
@@ -141,10 +192,17 @@ class SupplierOnboarding(Document):
         try:
             frappe.msgprint(_("Starting validation process..."))
             self.validation_status = "In Progress"
+            self.gstn_validated = 0
+            self.pan_validated = 0
+            self.cin_validated = 0
+            self.bank_validated = 0
+            self.udyam_validated = 0
+            self.validation_date = None
             # Clear stale failure remarks when re-validation starts.
             self.validation_remarks = None
             self.save(ignore_permissions=True)
             frappe.db.commit()
+            validation_requested_at = frappe.utils.now()
 
             try:
                 send_validation_started_email(self)
@@ -160,7 +218,10 @@ class SupplierOnboarding(Document):
                 queue="default",
                 timeout=300,
                 is_async=True,
-                **{"supplier_onboarding": self.name}
+                **{
+                    "supplier_onboarding": self.name,
+                    "validation_requested_at": validation_requested_at,
+                }
             )
             
             frappe.msgprint(_(
@@ -231,6 +292,11 @@ class SupplierOnboarding(Document):
                 supplier_doc.gstin = self.gstn
             if self.pan:
                 supplier_doc.pan = self.pan
+
+            # If vendor uploaded a company logo, map it to Supplier image.
+            company_logo_url = self._latest_attachment_url("company_logo")
+            if company_logo_url and supplier_doc.meta.has_field("image"):
+                supplier_doc.image = company_logo_url
             
             supplier_doc.save(ignore_permissions=True)
         
@@ -266,7 +332,9 @@ class SupplierOnboarding(Document):
         self.validation_status = "Not Validated"
         self.gstn_validated = 0
         self.pan_validated = 0
+        self.cin_validated = 0
         self.bank_validated = 0
+        self.udyam_validated = 0
         
         # Disable supplier until re-verification
         if self.supplier:
@@ -311,6 +379,13 @@ def submit_supplier_data(supplier_onboarding, data):
         # Check permissions
         if frappe.session.user != doc.email and not frappe.has_permission(doc=doc, ptype="write", user=frappe.session.user):
             frappe.throw(_("Not authorized to update this record"))
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
+            return {
+                "success": False,
+                "message": _(
+                    "Details can be updated only when onboarding is Pending Submission, Validation Failed, or Rejected."
+                ),
+            }
         
         # Validate data format before submission
         validation_errors = []
@@ -326,6 +401,12 @@ def submit_supplier_data(supplier_onboarding, data):
             is_valid, error = validate_pan_format(data['pan'])
             if not is_valid:
                 validation_errors.append(f"PAN: {error}")
+
+        # Validate CIN (optional)
+        if data.get('cin'):
+            is_valid, error = validate_cin_format(data['cin'])
+            if not is_valid:
+                validation_errors.append(f"CIN: {error}")
         
         # Validate IFSC
         if data.get('bank_ifsc_code'):
@@ -348,12 +429,20 @@ def submit_supplier_data(supplier_onboarding, data):
             }
         
         # Update fields
-        for field in ["gstn", "pan", "bank_account_no", "bank_ifsc_code", 
+        for field in ["gstn", "pan", "cin", "bank_account_no", "bank_ifsc_code", 
                       "udyog_aadhaar", "phone_number", "email"]:
             if field in data:
                 doc.set(field, data.get(field))
         
         doc.onboarding_status = "Data Submitted"
+        doc.validation_status = "Not Validated"
+        doc.gstn_validated = 0
+        doc.pan_validated = 0
+        doc.cin_validated = 0
+        doc.bank_validated = 0
+        doc.udyam_validated = 0
+        doc.validation_date = None
+        doc.validation_remarks = None
         doc.save(ignore_permissions=True)
         
         return {
@@ -370,16 +459,20 @@ def submit_supplier_data(supplier_onboarding, data):
 
 
 @frappe.whitelist()
-def send_credentials_manually(supplier_onboarding):
+def send_credentials_manually(supplier_onboarding, force=0):
     """Manually send login credentials to supplier."""
     try:
         _assert_onboarding_manager()
         doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
         if not doc.email:
             return {"success": False, "message": "No email provided for supplier"}
-        
-        send_supplier_credentials(doc)
-        return {"success": True, "message": "Login credentials sent successfully"}
+
+        sent, message = doc._send_credentials_if_needed(force=cint(force))
+        return {
+            "success": sent or "already sent" in (message or "").lower(),
+            "message": message,
+            "already_sent": not sent,
+        }
     except Exception as e:
         frappe.log_error(f"Failed to send credentials manually: {str(e)}", "Manual Credential Send Error")
         return {"success": False, "message": _("Failed to send credentials. Please check error logs.")}

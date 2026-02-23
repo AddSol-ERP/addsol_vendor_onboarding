@@ -17,16 +17,20 @@
     "section_break_5",
     "gstn",
     "pan",
+    "cin",
     "bank_account_no",
     "bank_ifsc_code",
     "column_break_10",
     "udyog_aadhaar",
     "phone_number",
     "email",
+    "credentials_email_sent",
     "validation_section",
     "gstn_validated",
     "pan_validated",
+    "cin_validated",
     "bank_validated",
+    "udyam_validated",
     "column_break_16",
     "validation_date",
     "validation_remarks",
@@ -107,6 +111,12 @@
       "uppercase": 1
     },
     {
+      "fieldname": "cin",
+      "fieldtype": "Data",
+      "label": "CIN / LLPIN",
+      "uppercase": 1
+    },
+    {
       "fieldname": "bank_account_no",
       "fieldtype": "Data",
       "label": "Bank Account Number"
@@ -125,7 +135,7 @@
     {
       "fieldname": "udyog_aadhaar",
       "fieldtype": "Data",
-      "label": "Udyog Aadhaar"
+      "label": "Udyam Registration Number"
     },
     {
       "fieldname": "phone_number",
@@ -138,6 +148,15 @@
       "fieldtype": "Data",
       "label": "Email",
       "options": "Email"
+    },
+    {
+      "default": "0",
+      "fieldname": "credentials_email_sent",
+      "fieldtype": "Check",
+      "hidden": 1,
+      "label": "Credentials Email Sent",
+      "no_copy": 1,
+      "read_only": 1
     },
     {
       "collapsible": 1,
@@ -161,9 +180,23 @@
     },
     {
       "default": "0",
+      "fieldname": "cin_validated",
+      "fieldtype": "Check",
+      "label": "CIN Validated",
+      "read_only": 1
+    },
+    {
+      "default": "0",
       "fieldname": "bank_validated",
       "fieldtype": "Check",
       "label": "Bank Account Validated",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "udyam_validated",
+      "fieldtype": "Check",
+      "label": "Udyam Validated",
       "read_only": 1
     },
     {

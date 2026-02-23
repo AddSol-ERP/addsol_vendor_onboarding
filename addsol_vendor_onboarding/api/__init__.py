@@ -4,13 +4,19 @@ from frappe import _
 from addsol_vendor_onboarding.utils.validation_utils import (
     validate_gstn_format,
     validate_pan_format,
+    validate_cin_format,
     validate_ifsc_format,
     validate_phone_format,
 )
 
 
 REQUIRED_UPLOAD_FIELDS = ("gstn_certificate", "pan_card", "bank_cheque")
-ALL_UPLOAD_FIELDS = REQUIRED_UPLOAD_FIELDS + ("udyog_aadhaar_certificate",)
+ALL_UPLOAD_FIELDS = REQUIRED_UPLOAD_FIELDS + (
+    "udyog_aadhaar_certificate",
+    "cin_certificate",
+    "company_logo",
+)
+VENDOR_EDITABLE_ONBOARDING_STATUSES = ("Pending Submission", "Validation Failed", "Rejected")
 PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
     "We could not validate your submitted details at this time. "
     "Please review and resubmit, or contact support."
@@ -44,6 +50,11 @@ def _validate_supplier_payload(data):
         if not ok:
             validation_errors.append(f"PAN: {error}")
 
+    if data.get("cin"):
+        ok, error = validate_cin_format(data["cin"])
+        if not ok:
+            validation_errors.append(f"CIN: {error}")
+
     if data.get("bank_ifsc_code"):
         ok, error = validate_ifsc_format(data["bank_ifsc_code"])
         if not ok:
@@ -54,13 +65,20 @@ def _validate_supplier_payload(data):
         if not ok:
             validation_errors.append(f"Phone Number: {error}")
 
+    if data.get("udyog_aadhaar"):
+        udyam_alnum = re.sub(r"[^A-Z0-9]", "", str(data.get("udyog_aadhaar")).upper())
+        if not re.fullmatch(r"UDYAM[A-Z]{2}\d{2}\d{7}", udyam_alnum):
+            validation_errors.append(
+                "Udyam: Please enter Udyam Registration Number in format UDYAM-XX-00-0000000"
+            )
+
     return validation_errors
 
 
 def _normalize_supplier_payload(data):
     normalized = dict(data or {})
 
-    for field in ("gstn", "pan", "bank_ifsc_code"):
+    for field in ("gstn", "pan", "cin", "bank_ifsc_code"):
         value = normalized.get(field)
         if isinstance(value, str):
             normalized[field] = value.strip().replace(" ", "").upper()
@@ -94,8 +112,12 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
             failed_sections.append(_("GSTN details"))
         if "pan" in message:
             failed_sections.append(_("PAN details"))
+        if "cin" in message:
+            failed_sections.append(_("CIN details"))
         if "bank" in message:
             failed_sections.append(_("Bank details"))
+        if "udyam" in message or "udyog" in message:
+            failed_sections.append(_("Udyam details"))
 
         if failed_sections:
             if len(failed_sections) == 1:
@@ -103,9 +125,7 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
             elif len(failed_sections) == 2:
                 section_text = _("{0} and {1}").format(failed_sections[0], failed_sections[1])
             else:
-                section_text = _("{0}, {1} and {2}").format(
-                    failed_sections[0], failed_sections[1], failed_sections[2]
-                )
+                section_text = _("{0}, and {1}").format(", ".join(failed_sections[:-1]), failed_sections[-1])
             return _(
                 "{0} could not be verified. Please review and resubmit, or contact support."
             ).format(section_text)
@@ -114,6 +134,18 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
             return validation_remarks
         return PUBLIC_VALIDATION_FAILURE_MESSAGE
     return validation_remarks
+
+
+def _prepare_onboarding_for_resubmission(doc):
+    doc.onboarding_status = "Data Submitted"
+    doc.validation_status = "Not Validated"
+    doc.gstn_validated = 0
+    doc.pan_validated = 0
+    doc.cin_validated = 0
+    doc.bank_validated = 0
+    doc.udyam_validated = 0
+    doc.validation_date = None
+    doc.validation_remarks = None
 
 
 def _get_existing_required_files(docname):
@@ -221,8 +253,12 @@ def _build_reconcile_failure_message(failed_sections):
             section_labels.append(_("GSTN details"))
         elif section == "PAN":
             section_labels.append(_("PAN details"))
+        elif section == "CIN":
+            section_labels.append(_("CIN details"))
         elif section == "Bank Account":
             section_labels.append(_("Bank details"))
+        elif section == "Udyog Aadhaar":
+            section_labels.append(_("Udyam details"))
 
     if not section_labels:
         return PUBLIC_VALIDATION_FAILURE_MESSAGE
@@ -232,9 +268,7 @@ def _build_reconcile_failure_message(failed_sections):
     elif len(section_labels) == 2:
         section_text = _("{0} and {1}").format(section_labels[0], section_labels[1])
     else:
-        section_text = _("{0}, {1} and {2}").format(
-            section_labels[0], section_labels[1], section_labels[2]
-        )
+        section_text = _("{0}, and {1}").format(", ".join(section_labels[:-1]), section_labels[-1])
 
     return _(
         "{0} could not be verified. Please review and resubmit, or contact support."
@@ -246,7 +280,7 @@ def _latest_validation_log_statuses(onboarding_name):
         "Supplier Validation Log",
         filters={
             "supplier_onboarding": onboarding_name,
-            "validation_type": ["in", ["GSTN", "PAN", "Bank Account"]],
+            "validation_type": ["in", ["GSTN", "PAN", "CIN", "Bank Account", "Udyog Aadhaar", "Udyam"]],
         },
         fields=["validation_type", "status", "validation_datetime", "creation"],
         order_by="validation_datetime desc, creation desc",
@@ -256,7 +290,7 @@ def _latest_validation_log_statuses(onboarding_name):
     latest_success_datetime = None
 
     for row in logs:
-        validation_type = row.validation_type
+        validation_type = "Udyog Aadhaar" if row.validation_type == "Udyam" else row.validation_type
         if validation_type not in latest_by_type:
             latest_by_type[validation_type] = row.status
 
@@ -277,7 +311,14 @@ def _reconcile_single_supplier_onboarding(doc, settings):
     checks = [
         ("GSTN", "gstn_validated", "gstn", bool(settings.enable_gstn_validation)),
         ("PAN", "pan_validated", "pan", bool(settings.enable_pan_validation)),
+        ("CIN", "cin_validated", "cin", bool(settings.enable_cin_validation)),
         ("Bank Account", "bank_validated", "bank_account_no", bool(settings.enable_bank_validation)),
+        (
+            "Udyog Aadhaar",
+            "udyam_validated",
+            "udyog_aadhaar",
+            bool(settings.enable_udyog_aadhaar_validation),
+        ),
     ]
 
     updates = {}
@@ -454,13 +495,13 @@ def reconcile_supplier_onboarding_validation_state(supplier_onboarding):
 @frappe.whitelist()
 def get_vendor_portal_data():
     """
-    Get vendor portal data for current user
+    Get supplier portal data for current user
     """
     # Enhanced session validation
     if not frappe.session or frappe.session.user == "Guest":
         return {
             "error": "login_required", 
-            "message": _("Please login to access the vendor portal"),
+            "message": _("Please login to access the supplier portal"),
             "redirect_url": "/login?redirect-to=/vendor-portal"
         }
     
@@ -468,7 +509,7 @@ def get_vendor_portal_data():
     if not user or user == "Guest":
         return {
             "error": "login_required", 
-            "message": _("Please login to access the vendor portal"),
+            "message": _("Please login to access the supplier portal"),
             "redirect_url": "/login?redirect-to=/vendor-portal"
         }
     
@@ -508,33 +549,41 @@ def get_vendor_portal_data():
                 "modified",
                 "gstn",
                 "pan",
+                "cin",
                 "bank_account_no",
                 "udyog_aadhaar",
                 "gstn_validated",
                 "pan_validated",
+                "cin_validated",
                 "bank_validated",
+                "udyam_validated",
                 "validation_remarks",
                 "rejection_reason"
             ],
             order_by="creation desc"
         )
 
-        if supplier_doc.disabled and not onboarding_list:
-            return {
-                "error": "supplier_disabled",
-                "message": _("Your supplier account is currently disabled. Please contact support."),
-                "redirect_url": "/contact-support",
-            }
-        
         for rec in onboarding_list:
             rec.validation_remarks = _sanitize_vendor_remarks(
                 rec.onboarding_status, rec.validation_remarks
             )
 
+        approved_exists = any(rec.onboarding_status == "Approved" for rec in onboarding_list)
+        onboarding_only = bool(supplier_doc.disabled or not approved_exists)
+        active_onboarding = None
+        for rec in onboarding_list:
+            if rec.onboarding_status not in ("Approved", "Rejected"):
+                active_onboarding = rec
+                break
+        if not active_onboarding and onboarding_list:
+            active_onboarding = onboarding_list[0]
+
         return {
             "supplier_found": True,
             "supplier_name": supplier,
             "supplier_enabled": not supplier_doc.disabled,
+            "onboarding_only": onboarding_only,
+            "active_onboarding": active_onboarding,
             "onboarding_list": onboarding_list,
             "has_pending": any(
                 rec.onboarding_status == "Pending Submission" 
@@ -546,8 +595,8 @@ def get_vendor_portal_data():
         
     except Exception as e:
         frappe.log_error(
-            message=f"Error getting vendor portal data for user {user}: {str(e)}",
-            title="Vendor Portal Data Error"
+            message=f"Error getting supplier portal data for user {user}: {str(e)}",
+            title="Supplier Portal Data Error"
         )
         return {
             "error": "system_error",
@@ -607,11 +656,12 @@ def get_onboarding_form_data(onboarding_id):
                 "redirect_url": "/vendor-portal"
             }
         
-        # Check if already approved (locked)
-        if doc.onboarding_status == "Approved":
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
             return {
                 "error": "locked", 
-                "message": _("This onboarding is already approved and cannot be edited"),
+                "message": _(
+                    "You can update details only when onboarding is in Pending Submission, Validation Failed, or Rejected status."
+                ),
                 "redirect_url": "/vendor-portal"
             }
         
@@ -627,10 +677,12 @@ def get_onboarding_form_data(onboarding_id):
                 "validation_status": doc.validation_status,
                 "gstn": doc.gstn,
                 "pan": doc.pan,
+                "cin": doc.cin,
                 "bank_account_no": doc.bank_account_no,
                 "bank_ifsc_code": doc.bank_ifsc_code,
                 "udyog_aadhaar": doc.udyog_aadhaar,
                 "phone_number": doc.phone_number,
+                "udyam_validated": doc.udyam_validated,
                 "validation_remarks": _sanitize_vendor_remarks(
                     doc.onboarding_status, doc.validation_remarks
                 ),
@@ -674,6 +726,13 @@ def submit_onboarding_data(onboarding_id, data):
         # Security check
         if doc.email != frappe.session.user:
             return {"success": False, "message": "Not authorized"}
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
+            return {
+                "success": False,
+                "message": _(
+                    "Details can be updated only when onboarding is Pending Submission, Validation Failed, or Rejected."
+                ),
+            }
         
         validation_errors = _validate_supplier_payload(data)
         if validation_errors:
@@ -696,12 +755,12 @@ def submit_onboarding_data(onboarding_id, data):
         # Update fields
         doc.gstn = data.get("gstn")
         doc.pan = data.get("pan")
+        doc.cin = data.get("cin")
         doc.bank_account_no = data.get("bank_account_no")
         doc.bank_ifsc_code = data.get("bank_ifsc_code")
         doc.udyog_aadhaar = data.get("udyog_aadhaar")
         doc.phone_number = data.get("phone_number")
-        doc.onboarding_status = "Data Submitted"
-        doc.validation_remarks = None
+        _prepare_onboarding_for_resubmission(doc)
         
         doc.save(ignore_permissions=True)
         _deduplicate_attachments(doc.name)
@@ -713,7 +772,22 @@ def submit_onboarding_data(onboarding_id, data):
         return {"success": False, "message": _("Unable to submit data. Please try again later.")}
 
 @frappe.whitelist()
-def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank_ifsc_code, udyog_aadhaar, phone_number, gstn_certificate=None, pan_card=None, bank_cheque=None, udyog_aadhaar_certificate=None):
+def submit_onboarding_with_files(
+    onboarding_id,
+    gstn,
+    pan,
+    cin=None,
+    bank_account_no=None,
+    bank_ifsc_code=None,
+    udyog_aadhaar=None,
+    phone_number=None,
+    gstn_certificate=None,
+    pan_card=None,
+    bank_cheque=None,
+    udyog_aadhaar_certificate=None,
+    cin_certificate=None,
+    company_logo=None,
+):
     """
     Submit onboarding data with file attachments
     """
@@ -726,11 +800,19 @@ def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank
         # Security check
         if doc.email != frappe.session.user:
             return {"success": False, "message": "Not authorized"}
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
+            return {
+                "success": False,
+                "message": _(
+                    "Details can be updated only when onboarding is Pending Submission, Validation Failed, or Rejected."
+                ),
+            }
         
         normalized_data = _normalize_supplier_payload(
             {
                 "gstn": gstn,
                 "pan": pan,
+                "cin": cin,
                 "bank_account_no": bank_account_no,
                 "bank_ifsc_code": bank_ifsc_code,
                 "udyog_aadhaar": udyog_aadhaar,
@@ -750,12 +832,12 @@ def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank
         # Update fields
         doc.gstn = normalized_data.get("gstn")
         doc.pan = normalized_data.get("pan")
+        doc.cin = normalized_data.get("cin")
         doc.bank_account_no = normalized_data.get("bank_account_no")
         doc.bank_ifsc_code = normalized_data.get("bank_ifsc_code")
         doc.udyog_aadhaar = normalized_data.get("udyog_aadhaar")
         doc.phone_number = normalized_data.get("phone_number")
-        doc.onboarding_status = "Data Submitted"
-        doc.validation_remarks = None
+        _prepare_onboarding_for_resubmission(doc)
         
         # Save the document first (without committing yet)
         doc.save(ignore_permissions=True)
@@ -766,7 +848,9 @@ def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank
             'gstn_certificate': gstn_certificate,
             'pan_card': pan_card,
             'bank_cheque': bank_cheque,
-            'udyog_aadhaar_certificate': udyog_aadhaar_certificate
+            'udyog_aadhaar_certificate': udyog_aadhaar_certificate,
+            'cin_certificate': cin_certificate,
+            'company_logo': company_logo,
         }
         
         for field_name, file_obj in file_mappings.items():
@@ -801,6 +885,13 @@ def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank
                     
                     if file_doc:
                         frappe.logger().info(f"File document created: {file_doc.name}")
+                        frappe.db.set_value(
+                            "File",
+                            file_doc.name,
+                            "attached_to_field",
+                            field_name,
+                            update_modified=False,
+                        )
                         
                         uploaded_files.append({
                             'file_name': file_obj.filename,
@@ -834,6 +925,7 @@ def submit_onboarding_with_files(onboarding_id, gstn, pan, bank_account_no, bank
                         frappe.delete_doc("File", uploaded_file['file_name_field'])
                     except Exception:
                         pass  # Ignore cleanup errors
+            frappe.db.rollback()
             
             error_messages = [f"File {f['file_name']}: {f['error']}" for f in failed_uploads]
             return {

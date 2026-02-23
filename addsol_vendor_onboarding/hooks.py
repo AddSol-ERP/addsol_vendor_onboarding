@@ -6,9 +6,9 @@ from __future__ import unicode_literals
 from frappe import _
 
 app_name = "addsol_vendor_onboarding"
-app_title = "Addsol Vendor Onboarding"
+app_title = "Addsol Supplier Onboarding"
 app_publisher = "Addition Solutions"
-app_description = "Vendor on boarding process for new supplier in India"
+app_description = "Supplier onboarding process for new suppliers in India"
 app_email = "contact@aitspl.com"
 app_license = "mit"
 

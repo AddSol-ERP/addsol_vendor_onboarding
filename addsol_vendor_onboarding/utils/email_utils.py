@@ -22,8 +22,12 @@ def _public_validation_failure_message(error_message):
         failed_sections.append(_("GSTN details"))
     if "pan" in message:
         failed_sections.append(_("PAN details"))
+    if "cin" in message:
+        failed_sections.append(_("CIN details"))
     if "bank" in message:
         failed_sections.append(_("Bank details"))
+    if "udyam" in message or "udyog" in message:
+        failed_sections.append(_("Udyam details"))
 
     if failed_sections:
         if len(failed_sections) == 1:
@@ -31,9 +35,7 @@ def _public_validation_failure_message(error_message):
         elif len(failed_sections) == 2:
             section_text = _("{0} and {1}").format(failed_sections[0], failed_sections[1])
         else:
-            section_text = _("{0}, {1} and {2}").format(
-                failed_sections[0], failed_sections[1], failed_sections[2]
-            )
+            section_text = _("{0}, and {1}").format(", ".join(failed_sections[:-1]), failed_sections[-1])
         return _(
             "{0} could not be verified. Please review and resubmit, or contact support."
         ).format(section_text)
@@ -59,54 +61,67 @@ def send_supplier_credentials(supplier_onboarding):
     if not supplier_onboarding.email:
         return
     
-    # Create or get supplier user
-    get_or_create_supplier_user(
+    # Create or get supplier user. For new users, include password setup link
+    # in the same credentials email to avoid duplicate emails.
+    _user, _is_new_user, reset_link = get_or_create_supplier_user(
         supplier_onboarding.email,
         supplier_onboarding.supplier_name
     )
     
-    # Generate PORTAL URL (not desk URL)
+    # Generate supplier portal URLs
     portal_url = get_url() + "/vendor-portal"
+    onboarding_url = _get_portal_onboarding_url(supplier_onboarding.name)
     
     # Email subject and message
     subject = _("Supplier Onboarding - Login Credentials")
     
+    if reset_link:
+        password_line = _(
+            '<li><strong>Set Password:</strong> <a href="{0}">Click here</a></li>'
+        ).format(reset_link)
+    else:
+        password_line = _(
+            '<li><strong>Password:</strong> Use <a href="{0}">Forgot Password</a> if needed</li>'
+        ).format(f"{get_url()}/login")
+
     message = """
     <p>Dear {0},</p>
-    
-    <p>Welcome to DeVoltrans Vendor Onboarding Portal!</p>
-    
-    <p>Your supplier account has been created. Please use the following credentials to login:</p>
-    
-    <ul>
-        <li><strong>Portal URL:</strong> <a href="{1}">{1}</a></li>
-        <li><strong>Username:</strong> {2}</li>
-        <li><strong>Password:</strong> You will receive a password reset email separately</li>
-    </ul>
-    
-    <p><strong>Important:</strong> This is a web portal. You do NOT need desk/app access.</p>
-    
-    <p>Please login and submit the following mandatory details:</p>
+
+    <p>Welcome to the DeVoltrans Supplier Onboarding Portal.</p>
+
+    <p><strong>Application ID:</strong> {3}</p>
+    <p><strong>Username:</strong> {2}</p>
+
+    <p><strong>Please complete the following steps:</strong></p>
+    <ol>
+        <li><strong>Set your password</strong><br>{4}</li>
+        <li><strong>Login to supplier portal</strong><br><a href="{1}">{1}</a></li>
+        <li><strong>Complete onboarding form</strong><br><a href="{5}">{5}</a></li>
+    </ol>
+
+    <p><strong>Mandatory details to submit:</strong></p>
     <ul>
         <li>GSTN (15 characters)</li>
         <li>PAN (10 characters)</li>
         <li>Bank Account Number</li>
         <li>Bank IFSC Code (11 characters)</li>
-        <li>Udyog Aadhaar</li>
         <li>Phone Number (10 digits)</li>
     </ul>
-    
-    <p>You will also need to upload supporting documents for verification.</p>
-    
-    <p><strong>Application ID:</strong> {3}</p>
-    
+    <p><strong>Optional details:</strong> CIN/LLPIN, Udyam Registration Number.</p>
+
+    <p><strong>Required documents:</strong> GSTN Certificate, PAN Card, Bank Document.</p>
+    <p><strong>Optional documents:</strong> Udyam Registration Certificate.</p>
+    <p><strong>Important:</strong> This is a web portal. Desk/app access is not required.</p>
+
     <p>Best regards,<br>
     DeVoltrans Purchase Team</p>
     """.format(
         supplier_onboarding.supplier_name,
         portal_url,
         supplier_onboarding.email,
-        supplier_onboarding.name
+        supplier_onboarding.name,
+        password_line,
+        onboarding_url,
     )
     
     frappe.sendmail(
@@ -232,21 +247,25 @@ def send_validation_success_email(supplier_onboarding):
             <ul>
                 <li>GSTN: {1}</li>
                 <li>PAN: {2}</li>
-                <li>Bank Account: {3}</li>
+                <li>CIN / LLPIN: {3}</li>
+                <li>Bank Account: {4}</li>
+                <li>Udyam Registration: {5}</li>
             </ul>
         </div>
         
         <p>Please review the supplier documents and details, then approve or reject the onboarding request.</p>
         
-        <p>Review Now: <a href="{4}">Click here</a></p>
+        <p>Review Now: <a href="{6}">Click here</a></p>
         
         <p>Best regards,<br>
         DeVoltrans ERP System</p>
         """.format(
             supplier_onboarding.supplier_name,
             '✓ Validated' if supplier_onboarding.gstn_validated else '✗ Not Validated',
-            '✓ Validated' if supplier_onboarding.pan_validated else '✗ Not Validated',
+            '✓ Validated' if supplier_onboarding.pan_validated else ('Not Provided' if not supplier_onboarding.pan else '✗ Not Validated'),
+            '✓ Validated' if getattr(supplier_onboarding, "cin_validated", 0) else ('Not Provided' if not getattr(supplier_onboarding, "cin", None) else '✗ Not Validated'),
             '✓ Validated' if supplier_onboarding.bank_validated else '✗ Not Validated',
+            '✓ Validated' if supplier_onboarding.udyam_validated else '✗ Not Validated',
             _get_desk_onboarding_url(supplier_onboarding.name)
         )
         
@@ -377,7 +396,7 @@ def get_or_create_supplier_user(email, full_name):
         full_name: Supplier name
     
     Returns:
-        User document
+        tuple: (user_doc, is_new_user, reset_link_or_none)
     """
     # Check if user already exists
     if frappe.db.exists("User", email):
@@ -387,7 +406,7 @@ def get_or_create_supplier_user(email, full_name):
         if "Supplier" not in user_roles:
             user.append("roles", {"role": "Supplier"})
             user.save(ignore_permissions=True)
-        return user
+        return user, False, None
     
     # Create new user
     try:
@@ -402,28 +421,9 @@ def get_or_create_supplier_user(email, full_name):
         })
         user.insert(ignore_permissions=True)
         
-        # Send password reset email instead of welcome email
-        # This is more reliable than reset_password() in ERPNext 15
-        try:
-            frappe.sendmail(
-                recipients=[email],
-                subject=_("Set Your Password - DeVoltrans Supplier Portal"),
-                template="password_reset",
-                args={
-                    "user": user,
-                    "reset_link": user.reset_password(send_email=False)
-                },
-                header=_("Set Your Password")
-            )
-            frappe.msgprint(_("Password reset email sent to {0}").format(email))
-        except Exception as email_error:
-            frappe.log_error(
-                message=f"Failed to send password reset email to {email}: {str(email_error)}",
-                title="Password Reset Email Failed"
-            )
-            frappe.msgprint(_("Warning: User created but password reset email could not be sent. Please contact support."))
-        
-        return user
+        # Generate a valid reset URL and include it in onboarding credential email.
+        reset_link = user.reset_password(send_email=False)
+        return user, True, reset_link
         
     except frappe.exceptions.DuplicateEntryError:
         # User was created by another process, get existing user
@@ -432,7 +432,7 @@ def get_or_create_supplier_user(email, full_name):
         if "Supplier" not in user_roles:
             user.append("roles", {"role": "Supplier"})
             user.save(ignore_permissions=True)
-        return user
+        return user, False, None
     except Exception as e:
         frappe.log_error(
             message=f"Failed to create user for {email}: {str(e)}",

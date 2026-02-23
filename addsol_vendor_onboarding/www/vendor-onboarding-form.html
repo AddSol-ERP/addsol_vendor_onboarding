@@ -83,15 +83,34 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <!-- Udyog Aadhaar -->
+                                <!-- CIN / LLPIN -->
                                 <div class="form-group">
-                                    <label for="udyog_aadhaar">{{ _("Udyog Aadhaar") }}</label>
+                                    <label for="cin">{{ _("CIN / LLPIN") }} ({{ _("Optional") }})</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="cin" 
+                                           name="cin"
+                                           style="text-transform: uppercase;"
+                                           placeholder="L12345AB1234PLC123456">
+                                    <small class="form-text text-muted">{{ _("CIN format: L12345AB1234PLC123456") }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Udyam Registration -->
+                                <div class="form-group">
+                                    <label for="udyog_aadhaar">{{ _("Udyam Registration Number") }}</label>
                                     <input type="text" 
                                            class="form-control" 
                                            id="udyog_aadhaar" 
-                                           name="udyog_aadhaar">
+                                           name="udyog_aadhaar"
+                                           style="text-transform: uppercase;"
+                                           placeholder="UDYAM-AB-00-0000000">
+                                    <small class="form-text text-muted">{{ _("Format: UDYAM-XX-00-0000000") }}</small>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6">
                                 <!-- Phone Number -->
                                 <div class="form-group">
@@ -118,7 +137,12 @@
                                     <li>{{ _("GSTN Certificate") }}</li>
                                     <li>{{ _("PAN Card") }}</li>
                                     <li>{{ _("Cancelled Cheque / Bank Statement") }}</li>
-                                    <li>{{ _("Udyog Aadhaar Certificate") }}</li>
+                                </ul>
+                                <h6 class="mt-2">{{ _("Optional Documents") }}:</h6>
+                                <ul>
+                                    <li>{{ _("CIN / LLPIN Certificate") }}</li>
+                                    <li>{{ _("Udyam Registration Certificate") }}</li>
+                                    <li>{{ _("Company Logo") }}</li>
                                 </ul>
                             </div>
                             
@@ -159,12 +183,35 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="udyog_aadhaar_certificate">{{ _("Udyog Aadhaar Certificate") }}</label>
+                                        <label for="cin_certificate">{{ _("CIN / LLPIN Certificate") }}</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="cin_certificate" name="cin_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                                            <label class="custom-file-label" for="cin_certificate">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="udyog_aadhaar_certificate">{{ _("Udyam Registration Certificate") }}</label>
                                         <div class="custom-file">
                                             <input type="file" class="custom-file-input" id="udyog_aadhaar_certificate" name="udyog_aadhaar_certificate" accept=".pdf,.jpg,.jpeg,.png">
                                             <label class="custom-file-label" for="udyog_aadhaar_certificate">{{ _("Choose file...") }}</label>
                                         </div>
                                         <small class="form-text text-muted">{{ _("PDF, JPG, PNG (Max 5MB)") }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="company_logo">{{ _("Company Logo") }}</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="company_logo" name="company_logo" accept=".jpg,.jpeg,.png,.svg,.webp">
+                                            <label class="custom-file-label" for="company_logo">{{ _("Choose file...") }}</label>
+                                        </div>
+                                        <small class="form-text text-muted">{{ _("JPG, PNG, SVG, WEBP (Max 5MB)") }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -296,6 +343,7 @@ frappe.ready(function() {
         $('#onboarding_id').val(doc.name);
         $('#gstn').val(doc.gstn || '');
         $('#pan').val(doc.pan || '');
+        $('#cin').val(doc.cin || '');
         $('#bank_account_no').val(doc.bank_account_no || '');
         $('#bank_ifsc_code').val(doc.bank_ifsc_code || '');
         $('#udyog_aadhaar').val(doc.udyog_aadhaar || '');
@@ -355,7 +403,14 @@ frappe.ready(function() {
         
         // Validate file sizes (5MB max)
         var maxSize = 5 * 1024 * 1024; // 5MB
-        var files = [gstnFile, panFile, bankFile, $('#udyog_aadhaar_certificate')[0].files[0]];
+        var files = [
+            gstnFile,
+            panFile,
+            bankFile,
+            $('#cin_certificate')[0].files[0],
+            $('#udyog_aadhaar_certificate')[0].files[0],
+            $('#company_logo')[0].files[0]
+        ];
         
         for (var i = 0; i < files.length; i++) {
             if (files[i] && files[i].size > maxSize) {
@@ -378,7 +433,14 @@ frappe.ready(function() {
     
     function uploadFilesAndSubmit() {
         var files_to_upload = [];
-        var file_inputs = ['gstn_certificate', 'pan_card', 'bank_cheque', 'udyog_aadhaar_certificate'];
+        var file_inputs = [
+            'gstn_certificate',
+            'pan_card',
+            'bank_cheque',
+            'cin_certificate',
+            'udyog_aadhaar_certificate',
+            'company_logo'
+        ];
         
         file_inputs.forEach(function(input_id) {
             var file_input = $('#' + input_id)[0];
@@ -451,6 +513,7 @@ frappe.ready(function() {
             onboarding_id: $('#onboarding_id').val(),
             gstn: $('#gstn').val().toUpperCase(),
             pan: $('#pan').val().toUpperCase(),
+            cin: $('#cin').val().toUpperCase(),
             bank_account_no: $('#bank_account_no').val(),
             bank_ifsc_code: $('#bank_ifsc_code').val().toUpperCase(),
             udyog_aadhaar: $('#udyog_aadhaar').val(),

@@ -29,7 +29,7 @@
       "fieldname": "validation_type",
       "fieldtype": "Select",
       "label": "Validation Type",
-      "options": "GSTN\nPAN\nBank Account\nUdyog Aadhaar",
+      "options": "GSTN\nPAN\nCIN\nBank Account\nUdyog Aadhaar",
       "reqd": 1
     },
     {

@@ -14,6 +14,7 @@
     "section_break_5",
     "enable_gstn_validation",
     "enable_pan_validation",
+    "enable_cin_validation",
     "enable_bank_validation",
     "column_break_9",
     "enable_udyog_aadhaar_validation",
@@ -71,6 +72,12 @@
       "fieldname": "enable_pan_validation",
       "fieldtype": "Check",
       "label": "Enable PAN Validation"
+    },
+    {
+      "default": "1",
+      "fieldname": "enable_cin_validation",
+      "fieldtype": "Check",
+      "label": "Enable CIN Validation"
     },
     {
       "default": "1",

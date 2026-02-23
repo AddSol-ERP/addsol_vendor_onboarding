@@ -7,6 +7,11 @@ import re
 import frappe
 from frappe import _
 
+def _normalize_alnum(value):
+    if not value:
+        return ""
+    return re.sub(r"[^A-Za-z0-9]", "", str(value)).upper()
+
 
 def validate_gstn_format(gstn):
     """
@@ -18,6 +23,7 @@ def validate_gstn_format(gstn):
     Returns:
         tuple: (is_valid, error_message)
     """
+    gstn = _normalize_alnum(gstn)
     if not gstn:
         return False, "GSTN is required"
     
@@ -41,6 +47,7 @@ def validate_pan_format(pan):
     Returns:
         tuple: (is_valid, error_message)
     """
+    pan = _normalize_alnum(pan)
     if not pan:
         return False, "PAN is required"
     
@@ -53,6 +60,26 @@ def validate_pan_format(pan):
     return True, None
 
 
+def validate_cin_format(cin):
+    """
+    Validate CIN/LLPIN format.
+
+    CIN format: L12345AB1234PLC123456
+    LLPIN format: AAA-1234 / AAA1234
+    """
+    cin = _normalize_alnum(cin)
+    if not cin:
+        return False, "CIN is required"
+
+    cin_pattern = r"^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$"
+    llpin_pattern = r"^[A-Z]{3}\d{4}$"
+
+    if re.match(cin_pattern, cin) or re.match(llpin_pattern, cin):
+        return True, None
+
+    return False, "Invalid CIN/LLPIN format"
+
+
 def validate_ifsc_format(ifsc):
     """
     Validate IFSC code format.
@@ -63,6 +90,7 @@ def validate_ifsc_format(ifsc):
     Returns:
         tuple: (is_valid, error_message)
     """
+    ifsc = _normalize_alnum(ifsc)
     if not ifsc:
         return False, "IFSC code is required"
     
@@ -129,6 +157,12 @@ def validate_supplier_data_format(data):
         is_valid, error = validate_pan_format(data['pan'])
         if not is_valid:
             errors['pan'] = error
+
+    # Validate CIN (optional)
+    if data.get('cin'):
+        is_valid, error = validate_cin_format(data['cin'])
+        if not is_valid:
+            errors['cin'] = error
     
     # Validate IFSC
     if data.get('bank_ifsc_code'):

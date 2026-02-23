@@ -8,6 +8,8 @@ from frappe import _
 from frappe.utils import get_url
 import json
 
+VENDOR_EDITABLE_ONBOARDING_STATUSES = ("Pending Submission", "Validation Failed", "Rejected")
+
 
 def get_context(context):
     """
@@ -34,9 +36,12 @@ def get_context(context):
         if doc.email != frappe.session.user:
             frappe.throw(_("You are not authorized to access this record"), frappe.PermissionError)
         
-        # Check if already approved (locked)
-        if doc.onboarding_status == "Approved":
-            frappe.throw(_("This onboarding is already approved and cannot be edited"))
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
+            frappe.throw(
+                _(
+                    "You can update details only when onboarding is in Pending Submission, Validation Failed, or Rejected status."
+                )
+            )
         
         context.doc = doc
         context.title = _("Submit Onboarding Details")
@@ -62,15 +67,31 @@ def submit_onboarding_data(onboarding_id, data):
         # Security check
         if doc.email != frappe.session.user:
             return {"success": False, "message": "Not authorized"}
+        if doc.onboarding_status not in VENDOR_EDITABLE_ONBOARDING_STATUSES:
+            return {
+                "success": False,
+                "message": _(
+                    "Details can be updated only when onboarding is Pending Submission, Validation Failed, or Rejected."
+                ),
+            }
         
         # Update fields
         doc.gstn = data.get('gstn')
         doc.pan = data.get('pan')
+        doc.cin = data.get('cin')
         doc.bank_account_no = data.get('bank_account_no')
         doc.bank_ifsc_code = data.get('bank_ifsc_code')
         doc.udyog_aadhaar = data.get('udyog_aadhaar')
         doc.phone_number = data.get('phone_number')
         doc.onboarding_status = "Data Submitted"
+        doc.validation_status = "Not Validated"
+        doc.gstn_validated = 0
+        doc.pan_validated = 0
+        doc.cin_validated = 0
+        doc.bank_validated = 0
+        doc.udyam_validated = 0
+        doc.validation_date = None
+        doc.validation_remarks = None
         
         doc.save(ignore_permissions=True)
         

@@ -21,8 +21,12 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
             failed_sections.append(_("GSTN details"))
         if "pan" in message:
             failed_sections.append(_("PAN details"))
+        if "cin" in message:
+            failed_sections.append(_("CIN details"))
         if "bank" in message:
             failed_sections.append(_("Bank details"))
+        if "udyam" in message or "udyog" in message:
+            failed_sections.append(_("Udyam details"))
 
         if failed_sections:
             if len(failed_sections) == 1:
@@ -30,9 +34,7 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
             elif len(failed_sections) == 2:
                 section_text = _("{0} and {1}").format(failed_sections[0], failed_sections[1])
             else:
-                section_text = _("{0}, {1} and {2}").format(
-                    failed_sections[0], failed_sections[1], failed_sections[2]
-                )
+                section_text = _("{0}, and {1}").format(", ".join(failed_sections[:-1]), failed_sections[-1])
             return _(
                 "{0} could not be verified. Please review and resubmit, or contact support."
             ).format(section_text)
@@ -45,7 +47,7 @@ def _sanitize_vendor_remarks(onboarding_status, validation_remarks):
 
 def get_context(context):
     """
-    Context for vendor portal page.
+    Context for supplier portal page.
     This is a WEB PAGE for Website Users (Suppliers).
     """
     context.no_cache = 1
@@ -102,11 +104,14 @@ def get_context(context):
                 "modified",
                 "gstn",
                 "pan",
+                "cin",
                 "bank_account_no",
                 "udyog_aadhaar",
                 "gstn_validated",
                 "pan_validated",
+                "cin_validated",
                 "bank_validated",
+                "udyam_validated",
                 "validation_remarks",
                 "rejection_reason"
             ],
@@ -128,7 +133,7 @@ def get_context(context):
         context.onboarding_list = []
         context.has_pending = False
     
-    context.title = _("Vendor Onboarding Portal")
+    context.title = _("Supplier Onboarding Portal")
     context.show_sidebar = False
     
     return context

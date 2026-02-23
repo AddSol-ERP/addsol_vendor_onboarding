@@ -1,13 +1,13 @@
 {% extends "templates/web.html" %}
 
-{% block title %}{{ _("Vendor Onboarding Portal") }}{% endblock %}
+{% block title %}{{ _("Supplier Onboarding Portal") }}{% endblock %}
 
 {% block page_content %}
 <div class="container vendor-portal py-5">
     <div class="row">
         <div class="col-md-12">
             <div class="page-header">
-                <h1>{{ _("Vendor Onboarding Portal") }}</h1>
+                <h1>{{ _("Supplier Onboarding Portal") }}</h1>
                 <p class="text-muted">{{ _("Manage your supplier onboarding applications") }}</p>
             </div>
             <hr>
@@ -32,7 +32,7 @@
             <div id="vendor-portal-content">
                 <div class="text-center">
                     <i class="fa fa-spinner fa-spin fa-2x"></i>
-                    <p class="mt-2">{{ _("Loading your vendor information...") }}</p>
+                    <p class="mt-2">{{ _("Loading your supplier information...") }}</p>
                 </div>
             </div>
             {% endif %}
@@ -45,7 +45,7 @@
 <script>
 frappe.ready(function() {
     {% if not access_denied %}
-    // Load vendor portal data using API
+    // Load supplier portal data using API
     frappe.call({
         method: 'addsol_vendor_onboarding.get_vendor_portal_data',
         callback: function(r) {
@@ -103,7 +103,7 @@ frappe.ready(function() {
             content = '<div class="alert alert-warning">' +
                 '<i class="fa fa-exclamation-triangle"></i> ' +
                 '<h4>{{ _("Access Issue") }}</h4>' +
-                '<p>' + (error_data.message || '{{ _("Unable to access vendor portal. Please contact support.") }}') + '</p>' +
+                    '<p>' + (error_data.message || '{{ _("Unable to access supplier portal. Please contact support.") }}') + '</p>' +
                 '</div>';
         }
         
@@ -152,7 +152,7 @@ frappe.ready(function() {
             return '{{ _("All steps completed: Your onboarding is approved.") }}';
         }
         if (record.onboarding_status === 'Rejected') {
-            return '{{ _("Step 3 completed with rejection. Please contact support for the next steps.") }}';
+            return '{{ _("Your onboarding was rejected by Purchase Manager. Please update details and resubmit.") }}';
         }
         return '{{ _("Your onboarding request is being processed.") }}';
     }
@@ -165,16 +165,29 @@ frappe.ready(function() {
     }
 
     function renderVerificationChecks(record) {
-        var udyogSubmitted = String(record.udyog_aadhaar || '').trim().length > 0;
+        var panProvided = String(record.pan || '').trim().length > 0;
+        var cinProvided = String(record.cin || '').trim().length > 0;
+        var udyamProvided = String(record.udyog_aadhaar || '').trim().length > 0;
         var checks = [
             { label: '{{ _("GSTN") }}', passed: !!record.gstn_validated },
-            { label: '{{ _("PAN") }}', passed: !!record.pan_validated },
+            {
+                label: '{{ _("PAN") }}',
+                passed: !!record.pan_validated,
+                successText: '{{ _("Verified") }}',
+                pendingText: panProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
+            },
+            {
+                label: '{{ _("CIN / LLPIN") }}',
+                passed: !!record.cin_validated,
+                successText: '{{ _("Verified") }}',
+                pendingText: cinProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
+            },
             { label: '{{ _("Bank") }}', passed: !!record.bank_validated },
             {
-                label: '{{ _("Udyog Aadhaar") }}',
-                passed: udyogSubmitted,
-                successText: '{{ _("Submitted") }}',
-                pendingText: '{{ _("Pending") }}'
+                label: '{{ _("Udyam Registration") }}',
+                passed: !!record.udyam_validated,
+                successText: '{{ _("Verified") }}',
+                pendingText: udyamProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
             }
         ];
         var html = '<div class="verification-checks">';
@@ -236,6 +249,62 @@ frappe.ready(function() {
     
     function renderVendorPortal(data) {
         var content = '';
+
+        if (data.onboarding_only) {
+            var record = data.active_onboarding || null;
+            content = '<div class="card">' +
+                '<div class="card-header">' +
+                '<h4 class="mb-0">{{ _("Supplier Onboarding") }}</h4>' +
+                '</div>' +
+                '<div class="card-body">';
+
+            if (record) {
+                content += '<p class="text-muted mb-2"><strong>{{ _("Application ID") }}:</strong> ' + record.name + '</p>' +
+                    '<div class="progress-message alert alert-light">' + getProgressMessage(record) + '</div>' +
+                    renderProgressSteps(record);
+
+                if (record.onboarding_status === 'Validation Failed' && record.validation_remarks) {
+                    content += '<div class="alert alert-warning">' +
+                        '<strong>{{ _("Validation Remarks") }}:</strong><br>' +
+                        escapeHtml(record.validation_remarks) +
+                        '</div>';
+                }
+
+                if (record.rejection_reason) {
+                    content += '<div class="alert alert-danger">' +
+                        '<strong>{{ _("Rejection Reason") }}:</strong><br>' +
+                        escapeHtml(record.rejection_reason) +
+                        '</div>';
+                }
+
+                if (record.onboarding_status === 'Pending Submission' || record.onboarding_status === 'Validation Failed' || record.onboarding_status === 'Rejected') {
+                    content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-primary btn-lg">' +
+                        '<i class="fa fa-edit"></i> {{ _("Complete Onboarding") }}' +
+                        '</a>';
+                } else if (record.onboarding_status === 'Data Submitted') {
+                    content += '<button class="btn btn-secondary btn-lg" disabled>' +
+                        '<i class="fa fa-clock-o"></i> {{ _("Verification in Progress") }}' +
+                        '</button>';
+                } else if (record.onboarding_status === 'Validation Successful') {
+                    content += '<button class="btn btn-info btn-lg" disabled>' +
+                        '<i class="fa fa-check"></i> {{ _("Pending Approval") }}' +
+                        '</button>';
+                } else {
+                    content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-outline-secondary">' +
+                        '<i class="fa fa-eye"></i> {{ _("View Onboarding") }}' +
+                        '</a>';
+                }
+            } else {
+                content += '<div class="alert alert-info">' +
+                    '<i class="fa fa-info-circle"></i> ' +
+                    '{{ _("Your onboarding is not initiated yet. Please contact the Purchase team.") }}' +
+                    '</div>';
+            }
+
+            content += '</div></div>';
+            $('#vendor-portal-content').html(content);
+            return;
+        }
         
         if (data.supplier_found) {
             content = '<div class="alert alert-info">' +
@@ -308,10 +377,10 @@ frappe.ready(function() {
                         '<div class="col-md-4 text-right">';
                     
                     // Action buttons
-                    if (record.onboarding_status === 'Pending Submission' || record.onboarding_status === 'Validation Failed') {
+                    if (record.onboarding_status === 'Pending Submission' || record.onboarding_status === 'Validation Failed' || record.onboarding_status === 'Rejected') {
                         content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-primary btn-lg">' +
                             '<i class="fa fa-edit"></i> {{ _("Submit Details") }}' +
-                            '</a>';
+                        '</a>';
                     } else if (record.onboarding_status === 'Data Submitted') {
                         content += '<button class="btn btn-secondary btn-lg" disabled>' +
                             '<i class="fa fa-clock-o"></i> {{ _("Validation in Progress") }}' +
@@ -325,9 +394,9 @@ frappe.ready(function() {
                             '<i class="fa fa-check-circle"></i> {{ _("Approved") }}' +
                             '</button>';
                     } else if (record.onboarding_status === 'Rejected') {
-                        content += '<button class="btn btn-danger btn-lg" disabled>' +
-                            '<i class="fa fa-times-circle"></i> {{ _("Rejected") }}' +
-                            '</button>';
+                        content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-primary btn-lg">' +
+                            '<i class="fa fa-edit"></i> {{ _("Complete Onboarding") }}' +
+                            '</a>';
                     }
                     
                     content += '<div class="mt-3">' +
@@ -361,7 +430,7 @@ frappe.ready(function() {
         $('#vendor-portal-content').html(
             '<div class="alert alert-warning">' +
             '<i class="fa fa-exclamation-triangle"></i> ' +
-            '{{ _("Unable to load vendor information. Please refresh the page or contact support.") }}' +
+            '{{ _("Unable to load supplier information. Please refresh the page or contact support.") }}' +
             '</div>'
         );
     }

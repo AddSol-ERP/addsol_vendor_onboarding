@@ -7,12 +7,12 @@ from frappe import _
 
 def get_data():
     """
-    Add Vendor Onboarding items to Buying module.
+    Add Supplier Onboarding items to Buying module.
     This will appear in the Buying workspace/dashboard.
     """
     return [
         {
-            "label": _("Vendor Onboarding"),
+            "label": _("Supplier Onboarding"),
             "icon": "fa fa-star",
             "items": [
                 {
