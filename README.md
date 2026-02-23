@@ -410,7 +410,7 @@ Developed by **Addition Solutions** for **DeVoltrans Pvt. Ltd.**
 
 ---
 
-**Version**: 0.0.1  
+**Version**: 1.2.1  
 **Last Updated**: January 2025  
 **ERPNext Version**: 15.x  
 **Status**: Production Ready

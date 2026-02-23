@@ -14,6 +14,24 @@ frappe.ui.form.on("Cashfree Settings", {
     is_sandbox(frm) {
         frm.set_value("api_url", frm.doc.is_sandbox ? SANDBOX_API_URL : PRODUCTION_API_URL);
     },
+
+    validate(frm) {
+        const disabled = [];
+        if (!frm.doc.enable_gstn_validation) disabled.push(__("GSTN"));
+        if (!frm.doc.enable_pan_validation) disabled.push(__("PAN"));
+        if (!frm.doc.enable_bank_validation) disabled.push(__("Bank Account"));
+
+        if (disabled.length) {
+            frappe.msgprint({
+                title: __("Strong Warning"),
+                message: __(
+                    "Mandatory validations are disabled: {0}. Supplier verification can be blocked or produce incomplete outcomes.",
+                    [disabled.join(", ")]
+                ),
+                indicator: "orange",
+            });
+        }
+    },
 });
 
 function test_cashfree_connection(frm) {

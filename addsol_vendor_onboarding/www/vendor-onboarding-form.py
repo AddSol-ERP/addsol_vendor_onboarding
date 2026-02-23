@@ -92,6 +92,7 @@ def submit_onboarding_data(onboarding_id, data):
         doc.udyam_validated = 0
         doc.validation_date = None
         doc.validation_remarks = None
+        doc.rejection_reason = None
         
         doc.save(ignore_permissions=True)
         

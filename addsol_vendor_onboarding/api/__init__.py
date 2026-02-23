@@ -146,6 +146,7 @@ def _prepare_onboarding_for_resubmission(doc):
     doc.udyam_validated = 0
     doc.validation_date = None
     doc.validation_remarks = None
+    doc.rejection_reason = None
 
 
 def _get_existing_required_files(docname):
@@ -567,6 +568,8 @@ def get_vendor_portal_data():
             rec.validation_remarks = _sanitize_vendor_remarks(
                 rec.onboarding_status, rec.validation_remarks
             )
+            if rec.onboarding_status != "Rejected":
+                rec.rejection_reason = None
 
         approved_exists = any(rec.onboarding_status == "Approved" for rec in onboarding_list)
         onboarding_only = bool(supplier_doc.disabled or not approved_exists)
@@ -686,7 +689,7 @@ def get_onboarding_form_data(onboarding_id):
                 "validation_remarks": _sanitize_vendor_remarks(
                     doc.onboarding_status, doc.validation_remarks
                 ),
-                "rejection_reason": doc.rejection_reason,
+                "rejection_reason": doc.rejection_reason if doc.onboarding_status == "Rejected" else None,
                 "existing_required_files": _get_existing_required_files(doc.name),
             },
             "supplier_enabled": not supplier.disabled,

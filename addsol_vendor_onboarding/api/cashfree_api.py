@@ -44,6 +44,24 @@ def _is_stale_validation_request(doc, validation_requested_at=None):
     return bool(doc_modified and doc_modified > requested_at)
 
 
+def _is_stale_against_latest_doc(supplier_onboarding, validation_requested_at=None):
+    """
+    Check staleness using the latest DB state, not the in-memory doc loaded
+    when the worker started.
+    """
+    if not validation_requested_at:
+        return False
+
+    latest_modified = frappe.db.get_value("Supplier Onboarding", supplier_onboarding, "modified")
+    if not latest_modified:
+        return False
+
+    try:
+        return get_datetime(latest_modified) > get_datetime(validation_requested_at)
+    except Exception:
+        return False
+
+
 def validate_supplier_details(supplier_onboarding, validation_requested_at=None):
     """
     Validate supplier details using Cashfree APIs.
@@ -143,9 +161,10 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
             doc.pan_validated = 0
 
         # Validate CIN/LLPIN (optional)
+        cin_value = (doc.cin or "").strip()
         if settings.enable_cin_validation:
-            if doc.cin:
-                cin_result = validate_cin(doc.cin, settings, supplier_onboarding=supplier_onboarding)
+            if cin_value:
+                cin_result = validate_cin(cin_value, settings, supplier_onboarding=supplier_onboarding)
                 cin_payload = cin_result.pop("request_payload", {"cin": doc.cin})
                 doc.cin_validated = 1 if cin_result["success"] else 0
                 if not cin_result["success"]:
@@ -155,14 +174,39 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
                 create_validation_log(
                     supplier_onboarding,
                     "CIN",
-                    doc.cin,
+                    cin_value,
                     cin_result,
                     cin_payload,
                 )
             else:
                 doc.cin_validated = 0
+                create_validation_log(
+                    supplier_onboarding,
+                    "CIN",
+                    doc.cin,
+                    {
+                        "success": False,
+                        "status": "Pending",
+                        "message": "CIN validation skipped: value not provided",
+                        "data": None,
+                    },
+                    {"cin": doc.cin},
+                )
         else:
             doc.cin_validated = 0
+            if cin_value:
+                create_validation_log(
+                    supplier_onboarding,
+                    "CIN",
+                    cin_value,
+                    {
+                        "success": False,
+                        "status": "Pending",
+                        "message": "CIN validation skipped: disabled in Cashfree Settings",
+                        "data": None,
+                    },
+                    {"cin": cin_value},
+                )
         
         # Validate Bank Account
         if settings.enable_bank_validation:
@@ -206,15 +250,16 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
         else:
             doc.bank_validated = 0
 
-        # Validate Udyog Aadhaar / Udyam Registration (if configured and supplied)
-        if settings.enable_udyog_aadhaar_validation and doc.udyog_aadhaar:
+        # Validate Udyog Aadhaar / Udyam Registration (optional)
+        udyam_value = (doc.udyog_aadhaar or "").strip()
+        if settings.enable_udyog_aadhaar_validation and udyam_value:
             udyog_result = validate_udyog_aadhaar(
-                doc.udyog_aadhaar,
+                udyam_value,
                 settings,
                 supplier_onboarding=supplier_onboarding,
             )
             doc.udyam_validated = 1 if udyog_result["success"] else 0
-            udyog_payload = udyog_result.pop("request_payload", {"udyam": doc.udyog_aadhaar})
+            udyog_payload = udyog_result.pop("request_payload", {"udyam": udyam_value})
             if not udyog_result["success"]:
                 all_valid = False
                 error_messages.append(f"Udyog Aadhaar: {udyog_result['message']}")
@@ -222,18 +267,68 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
             create_validation_log(
                 supplier_onboarding,
                 "Udyog Aadhaar",
-                doc.udyog_aadhaar,
+                udyam_value,
                 udyog_result,
                 udyog_payload,
+            )
+        elif settings.enable_udyog_aadhaar_validation and not udyam_value:
+            doc.udyam_validated = 0
+            create_validation_log(
+                supplier_onboarding,
+                "Udyog Aadhaar",
+                doc.udyog_aadhaar,
+                {
+                    "success": False,
+                    "status": "Pending",
+                    "message": "Udyam validation skipped: value not provided",
+                    "data": None,
+                },
+                {"udyam": doc.udyog_aadhaar},
+            )
+        elif not settings.enable_udyog_aadhaar_validation and udyam_value:
+            doc.udyam_validated = 0
+            create_validation_log(
+                supplier_onboarding,
+                "Udyog Aadhaar",
+                udyam_value,
+                {
+                    "success": False,
+                    "status": "Pending",
+                    "message": "Udyam validation skipped: disabled in Cashfree Settings",
+                    "data": None,
+                },
+                {"udyam": udyam_value},
             )
         else:
             doc.udyam_validated = 0
         
+        # Re-check staleness against latest DB state just before status update.
+        # This prevents an older async worker from overwriting a newer submission result.
+        if _is_stale_against_latest_doc(supplier_onboarding, validation_requested_at):
+            frappe.logger().info(
+                f"Skipping stale validation result write for {supplier_onboarding}. "
+                f"requested_at={validation_requested_at}"
+            )
+            return
+
         # Update supplier onboarding status
         if all_valid:
             doc.on_validation_success()
         else:
             doc.on_validation_failure("; ".join(error_messages))
+
+        # Keep onboarding status in sync with latest validation logs immediately.
+        # This avoids situations where API/log outcomes are correct but document state lags.
+        try:
+            from addsol_vendor_onboarding.api import _reconcile_single_supplier_onboarding
+
+            latest_doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
+            _reconcile_single_supplier_onboarding(latest_doc, settings)
+        except Exception as reconcile_error:
+            frappe.log_error(
+                message=str(reconcile_error),
+                title=f"Post-validation reconcile failed for {supplier_onboarding}",
+            )
 
         frappe.logger().info(
             "Validation decision for {0}: all_valid={1}, "
@@ -259,11 +354,34 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
         )
         doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
 
+        # Attempt to recover status from logs before forcing failure.
+        try:
+            from addsol_vendor_onboarding.api import _reconcile_single_supplier_onboarding
+
+            settings = get_cashfree_settings()
+            reconcile_result = _reconcile_single_supplier_onboarding(doc, settings)
+            if reconcile_result.get("validation_status") == "Validated":
+                frappe.db.commit()
+                return
+        except Exception as reconcile_error:
+            frappe.log_error(
+                message=str(reconcile_error),
+                title=f"Recovery reconcile failed for {supplier_onboarding}",
+            )
+
         # Do not downgrade to failed if validation was already persisted as successful.
         if (
             doc.onboarding_status == "Validation Successful"
             and doc.validation_status == "Validated"
         ):
+            return
+
+        # Do not overwrite a newer submission's state from an older worker.
+        if _is_stale_against_latest_doc(supplier_onboarding, validation_requested_at):
+            frappe.logger().info(
+                f"Skipping stale validation failure write for {supplier_onboarding}. "
+                f"requested_at={validation_requested_at}"
+            )
             return
 
         doc.on_validation_failure(str(e))
@@ -337,7 +455,7 @@ def validate_cin(cin, settings, supplier_onboarding=None):
     """
     base_url = _get_verification_base_url_for_settings(settings)
     payload = {
-        "verification_id": _build_udyam_verification_id(supplier_onboarding),
+        "verification_id": _build_verification_id("CIN", supplier_onboarding),
         "cin": cin,
     }
     result = _make_api_call_with_retry(
@@ -358,10 +476,21 @@ def _normalize_udyam_for_api(udyog_aadhaar):
     return value
 
 
-def _build_udyam_verification_id(supplier_onboarding=None):
+def _sanitize_verification_segment(value, max_length):
+    segment = re.sub(r"[^A-Z0-9]", "", (value or "").upper())
+    return (segment[:max_length] or "NA")
+
+
+def _build_verification_id(validation_type, supplier_onboarding=None):
+    """
+    Build a short, unique verification_id for Cashfree verification APIs.
+    """
+    validation_segment = _sanitize_verification_segment(validation_type, 8)
+    nonce_segment = _sanitize_verification_segment(frappe.generate_hash(length=10), 10)
     if supplier_onboarding:
-        return f"SUPONB-{supplier_onboarding}"
-    return f"SUPONB-{frappe.generate_hash(length=12)}"
+        onboarding_segment = _sanitize_verification_segment(supplier_onboarding, 18)
+        return f"SUPONB-{validation_segment}-{onboarding_segment}-{nonce_segment}"
+    return f"SUPONB-{validation_segment}-{nonce_segment}"
 
 
 def validate_udyog_aadhaar(udyog_aadhaar, settings, supplier_onboarding=None):
@@ -379,7 +508,7 @@ def validate_udyog_aadhaar(udyog_aadhaar, settings, supplier_onboarding=None):
 
     base_url = _get_verification_base_url_for_settings(settings)
     payload = {
-        "verification_id": _build_udyam_verification_id(supplier_onboarding),
+        "verification_id": _build_verification_id("UDYAM", supplier_onboarding),
         "udyam": _normalize_udyam_for_api(udyog_aadhaar),
     }
     result = _make_api_call_with_retry(
@@ -447,6 +576,16 @@ def _make_api_call_with_retry(url, payload, settings, validation_type, max_retri
                     "message": message,
                     "data": data,
                 }
+            elif response.status_code == 409 and isinstance(payload, dict) and payload.get("verification_id"):
+                response_text = (response.text or "").lower()
+                if "verification id already exists" in response_text or "verification_id_already_exists" in response_text:
+                    last_error = f"API Error: {response.status_code} - {response.text}"
+                    if attempt < max_retries:
+                        payload["verification_id"] = _build_verification_id(validation_type)
+                        frappe.logger().warning(
+                            f"{validation_type} verification_id already exists; retrying with a new verification_id"
+                        )
+                        continue
             elif response.status_code in [429, 500, 502, 503, 504]:
                 # Retryable errors - implement exponential backoff
                 last_error = f"API Error: {response.status_code} - {response.text}"
@@ -554,16 +693,20 @@ def create_validation_log(supplier_onboarding, validation_type,
         result: Validation result dictionary
     """
     try:
+        log_status = result.get("status") if isinstance(result, dict) else None
+        if log_status not in ("Success", "Failed", "Pending"):
+            log_status = "Success" if result["success"] else "Failed"
+
         log = frappe.get_doc({
             "doctype": "Supplier Validation Log",
             "supplier_onboarding": supplier_onboarding,
             "validation_type": validation_type,
             "validation_field": validation_field,
-            "status": "Success" if result["success"] else "Failed",
+            "status": log_status,
             "validation_datetime": frappe.utils.now(),
             "request_data": json.dumps(request_data, indent=2) if request_data else None,
             "response_data": json.dumps(result.get("data"), indent=2),
-            "error_message": result.get("message") if not result["success"] else None
+            "error_message": result.get("message") if log_status != "Success" else None
         })
         log.insert(ignore_permissions=True)
         

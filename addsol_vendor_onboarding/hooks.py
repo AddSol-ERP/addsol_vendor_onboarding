@@ -37,7 +37,7 @@ app_license = "mit"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/addsol_vendor_onboarding/css/addsol_vendor_onboarding.css"
-# web_include_js = "/assets/addsol_vendor_onboarding/js/addsol_vendor_onboarding.js"
+web_include_js = "/assets/addsol_vendor_onboarding/js/vendor_portal_guard.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "addsol_vendor_onboarding/public/scss/website"
@@ -218,7 +218,7 @@ doc_events = {
 
 # Request Events
 # ----------------
-# before_request = ["addsol_vendor_onboarding.utils.before_request"]
+before_request = ["addsol_vendor_onboarding.utils.request_guards.block_supplier_profile_edit"]
 # after_request = ["addsol_vendor_onboarding.utils.after_request"]
 
 # Job Events
@@ -272,3 +272,12 @@ extend_bootinfo = "addsol_vendor_onboarding.boot.boot_session"
 additional_timeline_content = {
     "Supplier": ["addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.supplier_onboarding.supplier_onboarding.get_timeline_data"]
 }
+
+# Add vendor portal shortcut in /me sidebar for Supplier role users.
+portal_menu_items = [
+    {
+        "title": _("Vendor Onboarding Portal"),
+        "route": "/vendor-portal",
+        "role": "Supplier",
+    }
+]

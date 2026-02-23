@@ -331,6 +331,13 @@ frappe.ready(function() {
     }
     
     function populateForm(doc) {
+        $('#error-message').hide();
+        $('#error-text').text('');
+        $('#validation-remarks-section').hide();
+        $('#validation-remarks-text').text('');
+        $('#rejection-reason-section').hide();
+        $('#rejection-reason-text').text('');
+
         // Hide loading, show form
         $('#loading-message').hide();
         $('#onboarding-form').show();
@@ -359,8 +366,8 @@ frappe.ready(function() {
             $('#validation-remarks-section').show();
         }
         
-        // Show rejection reason if present
-        if (doc.rejection_reason) {
+        // Show rejection reason only for rejected state
+        if (doc.onboarding_status === 'Rejected' && doc.rejection_reason) {
             $('#rejection-reason-text').text(doc.rejection_reason);
             $('#rejection-reason-section').show();
         }

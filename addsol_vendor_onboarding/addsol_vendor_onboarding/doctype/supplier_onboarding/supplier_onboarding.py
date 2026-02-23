@@ -21,12 +21,16 @@ from addsol_vendor_onboarding.utils.email_utils import (
     send_approval_email,
     send_rejection_email,
 )
+from addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.cashfree_settings.cashfree_settings import (
+    get_disabled_mandatory_validations,
+)
 
 PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
     "We could not validate your submitted details at this time. "
     "Please review and resubmit, or contact support."
 )
 VENDOR_EDITABLE_ONBOARDING_STATUSES = ("Pending Submission", "Validation Failed", "Rejected")
+ADMIN_VERIFICATION_ROLES = {"Purchase Manager", "System Manager", "DeVoltrans Management"}
 
 
 def _public_validation_failure_message(error_message):
@@ -59,8 +63,34 @@ def _public_validation_failure_message(error_message):
 
 
 def _assert_onboarding_manager():
-    if not {"Purchase Manager", "System Manager", "DeVoltrans Management"} & set(frappe.get_roles()):
+    if not ADMIN_VERIFICATION_ROLES & set(frappe.get_roles()):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _is_admin_verification_user():
+    return bool(ADMIN_VERIFICATION_ROLES & set(frappe.get_roles()))
+
+
+def _build_verification_block_message(disabled_mandatory):
+    if _is_admin_verification_user():
+        return _(
+            "Cannot start verification because mandatory Cashfree validations are disabled: {0}. "
+            "Please enable them in Cashfree Settings and try again."
+        ).format(", ".join(disabled_mandatory))
+    return _(
+        "Verification cannot be started right now due to configuration issues. "
+        "Please contact support."
+    )
+
+
+def _ensure_mandatory_validations_enabled_for_submission():
+    settings = frappe.get_single("Cashfree Settings")
+    disabled_mandatory = get_disabled_mandatory_validations(settings)
+    if disabled_mandatory:
+        frappe.throw(
+            _build_verification_block_message(disabled_mandatory),
+            title=_("Verification Blocked"),
+        )
 
 
 class SupplierOnboarding(Document):
@@ -106,6 +136,7 @@ class SupplierOnboarding(Document):
     def validate_mandatory_fields(self):
         """Check if all mandatory fields are filled when data is submitted."""
         if self.onboarding_status == "Data Submitted":
+            _ensure_mandatory_validations_enabled_for_submission()
             mandatory_fields = {
                 "gstn": "GSTN",
                 "pan": "PAN",
@@ -190,7 +221,12 @@ class SupplierOnboarding(Document):
     def trigger_validation(self):
         """Trigger Cashfree API validation."""
         try:
+            _ensure_mandatory_validations_enabled_for_submission()
+
             frappe.msgprint(_("Starting validation process..."))
+            # Ensure worker picks this record for validation, even when manually re-triggered
+            # from a previously failed state.
+            self.onboarding_status = "Data Submitted"
             self.validation_status = "In Progress"
             self.gstn_validated = 0
             self.pan_validated = 0
@@ -233,7 +269,12 @@ class SupplierOnboarding(Document):
                 message=str(e),
                 title="Validation Trigger Failed"
             )
-            frappe.throw(_("Failed to trigger validation: {0}").format(str(e)))
+            if _is_admin_verification_user():
+                frappe.throw(_("Failed to trigger validation: {0}").format(str(e)))
+            frappe.throw(
+                _("Unable to start verification at the moment. Please contact support."),
+                title=_("Verification Failed"),
+            )
     
     def on_validation_success(self):
         """Called when validation is successful."""
@@ -326,6 +367,14 @@ class SupplierOnboarding(Document):
         """Re-initiate the onboarding process for changes."""
         if self.onboarding_status != "Approved":
             frappe.throw(_("Only approved suppliers can be re-verified"))
+
+        settings = frappe.get_single("Cashfree Settings")
+        disabled_mandatory = get_disabled_mandatory_validations(settings)
+        if disabled_mandatory:
+            frappe.throw(
+                _build_verification_block_message(disabled_mandatory),
+                title=_("Verification Blocked"),
+            )
         
         self.re_verification_reason = reason
         self.onboarding_status = "Pending Submission"
@@ -355,8 +404,30 @@ class SupplierOnboarding(Document):
     @frappe.whitelist()
     def get_attached_documents(self):
         """Get list of attached documents."""
-        from frappe.desk.form.load import get_attachments
-        return get_attachments("Supplier Onboarding", self.name)
+        field_labels = {
+            "gstn_certificate": _("GSTN Certificate"),
+            "pan_card": _("PAN Card"),
+            "bank_cheque": _("Cancelled Cheque / Bank Statement"),
+            "cin_certificate": _("CIN / LLPIN Certificate"),
+            "udyog_aadhaar_certificate": _("Udyam Registration Certificate"),
+            "company_logo": _("Company Logo"),
+        }
+
+        files = frappe.get_all(
+            "File",
+            filters={
+                "attached_to_doctype": "Supplier Onboarding",
+                "attached_to_name": self.name,
+                "is_folder": 0,
+            },
+            fields=["name", "file_name", "file_url", "file_size", "attached_to_field", "modified"],
+            order_by="modified desc",
+        )
+
+        for file_doc in files:
+            file_doc.field_label = field_labels.get(file_doc.attached_to_field) or _("General Attachment")
+
+        return files
 
 
 # Whitelisted methods for API access
@@ -443,6 +514,7 @@ def submit_supplier_data(supplier_onboarding, data):
         doc.udyam_validated = 0
         doc.validation_date = None
         doc.validation_remarks = None
+        doc.rejection_reason = None
         doc.save(ignore_permissions=True)
         
         return {
@@ -503,6 +575,17 @@ def reinitiate_verification(supplier_onboarding, reason):
     doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
     doc.initiate_reverification(reason)
     return {"success": True, "message": "Re-verification initiated"}
+
+
+@frappe.whitelist()
+def trigger_supplier_onboarding_validation(supplier_onboarding):
+    """Trigger validation for an onboarding record (admin/purchase roles only)."""
+    _assert_onboarding_manager()
+    doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
+    if doc.docstatus == 2:
+        frappe.throw(_("Cannot trigger validation for cancelled onboarding records"))
+    doc.trigger_validation()
+    return {"success": True, "message": _("Validation triggered successfully")}
 
 
 @frappe.whitelist()

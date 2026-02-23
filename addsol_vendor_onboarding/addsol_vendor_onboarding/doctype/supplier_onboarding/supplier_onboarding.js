@@ -172,13 +172,44 @@ function trigger_validation(frm) {
     frappe.confirm(
         __('This will trigger the Automatic validation process. Continue?'),
         function() {
-            frm.set_value('onboarding_status', 'Data Submitted');
-            frm.save();
+            frappe.call({
+                method: 'addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.supplier_onboarding.supplier_onboarding.trigger_supplier_onboarding_validation',
+                args: {
+                    supplier_onboarding: frm.doc.name
+                },
+                freeze: true,
+                freeze_message: __('Triggering validation...'),
+                callback: function(r) {
+                    if (r.message && r.message.success) {
+                        frappe.show_alert({
+                            message: __('Validation process started'),
+                            indicator: 'blue'
+                        });
+                        frm.reload_doc();
+                    }
+                }
+            });
         }
     );
 }
 
 function show_attached_documents(frm) {
+    const formatFileSize = (size) => {
+        const bytes = Number(size);
+        if (!Number.isFinite(bytes) || bytes <= 0) {
+            return __('Size unavailable');
+        }
+        if (bytes < 1024) {
+            return `${bytes} B`;
+        }
+        if (bytes < 1024 * 1024) {
+            return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
+
+    const escapeHtml = (value) => frappe.utils.escape_html(String(value || ''));
+
     frappe.call({
         method: 'get_attached_documents',
         doc: frm.doc,
@@ -186,7 +217,11 @@ function show_attached_documents(frm) {
             if (r.message && r.message.length > 0) {
                 let html = '<div class="attached-documents"><h4>Attached Documents:</h4><ul>';
                 r.message.forEach(function(doc) {
-                    html += `<li><a href="${doc.file_url}" target="_blank">${doc.file_name}</a> (${doc.file_size})</li>`;
+                    const label = escapeHtml(doc.field_label || __('General Attachment'));
+                    const fileName = escapeHtml(doc.file_name || __('Unnamed file'));
+                    const fileUrl = escapeHtml(doc.file_url || '#');
+                    const fileSize = formatFileSize(doc.file_size);
+                    html += `<li><strong>${label}:</strong> <a href="${fileUrl}" target="_blank">${fileName}</a> (${fileSize})</li>`;
                 });
                 html += '</ul></div>';
                 frm.get_field('documents_html').html(html);

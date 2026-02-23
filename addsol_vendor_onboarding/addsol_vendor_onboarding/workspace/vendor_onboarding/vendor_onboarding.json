@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"id\":\"vendor_shortcuts_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Actions</b></span>\",\"col\":12}},{\"id\":\"supplier_onboarding_shortcuts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Onboarding\",\"col\":3}},{\"id\":\"supplier_validation_log_shortcuts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Validation Log\",\"col\":3}},{\"id\":\"supplier_shortcuts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier\",\"col\":3}},{\"id\":\"verification_settings_shortcuts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cashfree Settings\",\"col\":3}},{\"id\":\"vendor_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_cards_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operations</b></span>\",\"col\":12}},{\"id\":\"onboarding_requests_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Onboarding Requests\",\"col\":4}},{\"id\":\"validation_logs_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Validation Logs\",\"col\":4}},{\"id\":\"supplier_master_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Master\",\"col\":4}},{\"id\":\"settings_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}}]",
+  "content": "[{\"id\":\"vendor_kpi_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Status Overview</b></span>\",\"col\":12}},{\"id\":\"approved_suppliers_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Approved Suppliers\",\"col\":3}},{\"id\":\"pending_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Onboarding\",\"col\":3}},{\"id\":\"rejected_onboarding_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rejected Onboarding\",\"col\":3}},{\"id\":\"awaiting_approval_number_card\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Verification Passed - Awaiting Approval\",\"col\":3}},{\"id\":\"vendor_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_shortcuts_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Links</b></span>\",\"col\":12}},{\"id\":\"supplier_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier List\",\"col\":3}},{\"id\":\"supplier_onboarding_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Onboarding List\",\"col\":3}},{\"id\":\"supplier_validation_log_list_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Supplier Validation Logs List\",\"col\":3}},{\"id\":\"verification_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cashfree Settings List\",\"col\":3}},{\"id\":\"vendor_spacer_2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"vendor_cards_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Operations</b></span>\",\"col\":12}},{\"id\":\"onboarding_requests_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Onboarding Requests\",\"col\":4}},{\"id\":\"validation_logs_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Validation Logs\",\"col\":4}},{\"id\":\"supplier_master_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Supplier Master\",\"col\":4}},{\"id\":\"settings_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}}]",
   "creation": "2025-01-27 12:00:00.000000",
   "custom_blocks": [],
   "docstatus": 0,
@@ -89,7 +89,24 @@
   "modified_by": "Administrator",
   "module": "Addsol Vendor Onboarding",
   "name": "Vendor Onboarding",
-  "number_cards": [],
+  "number_cards": [
+    {
+      "label": "Approved Suppliers",
+      "number_card_name": "Approved Suppliers"
+    },
+    {
+      "label": "Pending Onboarding",
+      "number_card_name": "Pending Onboarding"
+    },
+    {
+      "label": "Rejected Onboarding",
+      "number_card_name": "Rejected Onboarding"
+    },
+    {
+      "label": "Verification Passed - Awaiting Approval",
+      "number_card_name": "Verification Passed - Awaiting Approval"
+    }
+  ],
   "owner": "Administrator",
   "parent_page": "",
   "public": 1,
@@ -98,30 +115,30 @@
   "sequence_id": 15,
   "shortcuts": [
     {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "Supplier List",
+      "link_to": "Supplier",
+      "type": "DocType"
+    },
+    {
       "color": "Green",
       "doc_view": "List",
-      "label": "Supplier Onboarding",
+      "label": "Supplier Onboarding List",
       "link_to": "Supplier Onboarding",
       "type": "DocType"
     },
     {
       "color": "Blue",
       "doc_view": "List",
-      "label": "Supplier Validation Log",
+      "label": "Supplier Validation Logs List",
       "link_to": "Supplier Validation Log",
-      "type": "DocType"
-    },
-    {
-      "color": "Grey",
-      "doc_view": "List",
-      "label": "Suppliers",
-      "link_to": "Supplier",
       "type": "DocType"
     },
     {
       "color": "Orange",
       "doc_view": "List",
-      "label": "Verification Settings",
+      "label": "Cashfree Settings List",
       "link_to": "Cashfree Settings",
       "type": "DocType"
     }
