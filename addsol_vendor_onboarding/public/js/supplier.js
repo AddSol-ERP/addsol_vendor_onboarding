@@ -42,7 +42,13 @@ function start_onboarding(frm) {
                             supplier: frm.doc.name,
                             supplier_name: frm.doc.supplier_name,
                             email: frm.doc.email_id,
-                            phone_number: frm.doc.mobile_no
+                            phone_number: frm.doc.mobile_no,
+                            ...(frm.doc.gstin && { gstn: frm.doc.gstin }),
+                            ...(frm.doc.pan && { pan: frm.doc.pan }),
+                            ...(frm.doc.cin_llpin && { cin: frm.doc.cin_llpin }),
+                            ...(frm.doc.bank_account_no && { bank_account_no: frm.doc.bank_account_no }),
+                            ...(frm.doc.bank_ifsc_code && { bank_ifsc: frm.doc.bank_ifsc_code }),
+                            ...(frm.doc.udyam_registration_number && { udyog_aadhaar: frm.doc.udyam_registration_number })
                         }
                     },
                     callback: function(r) {

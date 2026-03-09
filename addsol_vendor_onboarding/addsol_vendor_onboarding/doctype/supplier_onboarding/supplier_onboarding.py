@@ -33,7 +33,7 @@ PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
     "Please review and resubmit, or contact support."
 )
 VENDOR_EDITABLE_ONBOARDING_STATUSES = ("Pending Submission", "Validation Failed", "Rejected")
-ADMIN_VERIFICATION_ROLES = {"Purchase Manager", "System Manager", "DeVoltrans Management"}
+ADMIN_VERIFICATION_ROLES = {"Purchase Manager", "System Manager", "Vendor Management"}
 
 
 def _public_validation_failure_message(error_message):
@@ -165,6 +165,32 @@ class SupplierOnboarding(Document):
             if not supplier_doc.disabled:
                 supplier_doc.disabled = 1
                 supplier_doc.save(ignore_permissions=True)
+    
+    def before_insert(self):
+        """Copy data from linked Supplier if fields are empty."""
+        if self.supplier and not self.get_doc_before_save():
+            try:
+                supplier_doc = frappe.get_doc("Supplier", self.supplier)
+                
+                # Copy fields from Supplier if they're empty in onboarding
+                # Use safe field access methods to avoid AttributeError
+                if not self.get("gstin") and supplier_doc.get("gstin"):
+                    self.gstin = supplier_doc.gstin
+                if not self.get("pan") and supplier_doc.get("pan"):
+                    self.pan = supplier_doc.pan
+                if not self.get("cin") and supplier_doc.get("cin_llpin"):
+                    self.cin = supplier_doc.cin_llpin
+                if not self.get("bank_account_no") and supplier_doc.get("bank_account_no"):
+                    self.bank_account_no = supplier_doc.bank_account_no
+                if not self.get("bank_ifsc") and supplier_doc.get("bank_ifsc_code"):
+                    self.bank_ifsc = supplier_doc.bank_ifsc_code
+                if not self.get("udyog_aadhaar") and supplier_doc.get("udyam_registration_number"):
+                    self.udyog_aadhaar = supplier_doc.udyam_registration_number
+                if not self.get("phone_number") and supplier_doc.get("mobile_no"):
+                    self.phone_number = supplier_doc.mobile_no
+                    
+            except frappe.DoesNotExistError:
+                pass  # Supplier might not exist yet
     
     def after_insert(self):
         """Send login credentials to supplier after creation."""

@@ -307,7 +307,7 @@ def _latest_validation_log_statuses(onboarding_name):
 
 
 def _is_onboarding_manager():
-    return bool({"Purchase Manager", "System Manager", "DeVoltrans Management"} & set(frappe.get_roles()))
+    return bool({"Purchase Manager", "System Manager", "Vendor Management"} & set(frappe.get_roles()))
 
 
 def _reconcile_single_supplier_onboarding(doc, settings):
@@ -497,7 +497,7 @@ def reconcile_supplier_onboarding_validation_state(supplier_onboarding):
     }
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_vendor_portal_data():
     """
     Get supplier portal data for current user

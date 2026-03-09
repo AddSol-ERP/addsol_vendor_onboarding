@@ -54,10 +54,10 @@
 </div>
 {% endblock %}
 
+{% if not access_denied %}
 {% block script %}
 <script>
 frappe.ready(function() {
-    {% if not access_denied %}
     // Load supplier portal data using API
     frappe.call({
         method: 'addsol_vendor_onboarding.get_vendor_portal_data',
@@ -85,7 +85,6 @@ frappe.ready(function() {
             }
         }
     });
-    {% endif %}
     
     function handleAccessError(error_data) {
         var content = '';
@@ -432,7 +431,7 @@ frappe.ready(function() {
         } else {
             content = '<div class="alert alert-danger">' +
                 '<i class="fa fa-exclamation-circle"></i> ' +
-                '{{ _("No supplier record found for your account. Please contact the administrator at contact@aitspl.com") }}' +
+                '{{ _("No supplier record found for your account. Please contact the administrator") }}' +
                 '</div>';
         }
         
@@ -450,6 +449,7 @@ frappe.ready(function() {
 });
 </script>
 {% endblock %}
+{% endif %}
 
 {% block style %}
 <style>

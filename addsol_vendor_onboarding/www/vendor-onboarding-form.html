@@ -308,6 +308,12 @@ frappe.ready(function() {
         return;
     }
     
+    // Check if user is logged in before making API call
+    if (!frappe.session || frappe.session.user === 'Guest') {
+        showLoginRequired();
+        return;
+    }
+    
     // Load onboarding data
     loadOnboardingData(onboardingId);
     
@@ -577,6 +583,18 @@ frappe.ready(function() {
         $('#upload-progress').hide();
         $('.progress-bar').css('width', '0%');
         $('#submit-btn').prop('disabled', false).html('<i class="fa fa-paper-plane"></i> {{ _("Submit for Validation") }}');
+    }
+    
+    function showLoginRequired() {
+        $('#loading-message').hide();
+        $('#error-message').show().html(
+            '<i class="fa fa-lock"></i> ' +
+            '<strong>{{ _("Login Required") }}</strong><br>' +
+            '{{ _("Please login to access your onboarding form.") }}<br><br>' +
+            '<a href="/login?redirect-to=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary">' +
+            '<i class="fa fa-sign-in"></i> {{ _("Login to Continue") }}' +
+            '</a>'
+        );
     }
     
     // Update file labels when files are selected

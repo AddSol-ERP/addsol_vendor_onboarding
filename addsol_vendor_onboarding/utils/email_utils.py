@@ -8,6 +8,28 @@ import frappe
 from frappe import _
 from frappe.utils import get_url
 
+
+def get_company_name():
+    """Get the company name from ERPNext system settings."""
+    try:
+        company_name = frappe.db.get_single_value("Global Defaults", "default_company")
+        # if no company_name is found use user default value
+        if not company_name:
+            company_name = frappe.defaults.get_user_default("Company")
+        return company_name or _("Your Company")
+    except:
+        return _("Your Company")
+
+
+def get_purchase_team_name():
+    """Get the purchase team name with company fallback."""
+    return _("{0} Purchase Team").format(get_company_name())
+
+
+def get_system_name():
+    """Get the system name with company fallback."""
+    return _("{0} ERP System").format(get_company_name())
+
 PUBLIC_VALIDATION_FAILURE_MESSAGE = _(
     "We could not validate your submitted details at this time. "
     "Please review and resubmit, or contact support."
@@ -87,7 +109,7 @@ def send_supplier_credentials(supplier_onboarding):
     message = """
     <p>Dear {0},</p>
 
-    <p>Welcome to the DeVoltrans Supplier Onboarding Portal.</p>
+    <p>Welcome to the {6} Supplier Onboarding Portal.</p>
 
     <p><strong>Application ID:</strong> {3}</p>
     <p><strong>Username:</strong> {2}</p>
@@ -114,14 +136,15 @@ def send_supplier_credentials(supplier_onboarding):
     <p><strong>Important:</strong> This is a web portal. Desk/app access is not required.</p>
 
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(
+    {7}</p>""".format(
         supplier_onboarding.supplier_name,
         portal_url,
         supplier_onboarding.email,
         supplier_onboarding.name,
         password_line,
         onboarding_url,
+        get_company_name(),
+        get_purchase_team_name()
     )
     
     frappe.sendmail(
@@ -155,11 +178,11 @@ def send_validation_failure_email(supplier_onboarding, error_message):
     <p>Login URL: <a href="{2}">Click here</a></p>
     
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(
+    {0}</p>""".format(
         supplier_onboarding.supplier_name,
         _public_validation_failure_message(error_message),
-        _get_portal_onboarding_url(supplier_onboarding.name)
+        _get_portal_onboarding_url(supplier_onboarding.name),
+        get_purchase_team_name()
     )
     
     frappe.sendmail(
@@ -186,11 +209,11 @@ def send_validation_failure_email(supplier_onboarding, error_message):
         <p>View Details: <a href="{2}">Click here</a></p>
         
         <p>Best regards,<br>
-        DeVoltrans ERP System</p>
-        """.format(
+        {0}</p>""".format(
             supplier_onboarding.supplier_name,
             error_message,
-            _get_desk_onboarding_url(supplier_onboarding.name)
+            _get_desk_onboarding_url(supplier_onboarding.name),
+            get_system_name()
         )
         
         frappe.sendmail(
@@ -223,8 +246,7 @@ def send_validation_success_email(supplier_onboarding):
     <p>You will receive another email once your application has been reviewed.</p>
     
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(supplier_onboarding.supplier_name)
+    {1}</p>""".format(supplier_onboarding.supplier_name, get_purchase_team_name())
     
     frappe.sendmail(
         recipients=[supplier_onboarding.email],
@@ -258,15 +280,15 @@ def send_validation_success_email(supplier_onboarding):
         <p>Review Now: <a href="{6}">Click here</a></p>
         
         <p>Best regards,<br>
-        DeVoltrans ERP System</p>
-        """.format(
+        {0}</p>""".format(
             supplier_onboarding.supplier_name,
             '✓ Validated' if supplier_onboarding.gstn_validated else '✗ Not Validated',
             '✓ Validated' if supplier_onboarding.pan_validated else ('Not Provided' if not supplier_onboarding.pan else '✗ Not Validated'),
             '✓ Validated' if getattr(supplier_onboarding, "cin_validated", 0) else ('Not Provided' if not getattr(supplier_onboarding, "cin", None) else '✗ Not Validated'),
             '✓ Validated' if supplier_onboarding.bank_validated else '✗ Not Validated',
             '✓ Validated' if supplier_onboarding.udyam_validated else '✗ Not Validated',
-            _get_desk_onboarding_url(supplier_onboarding.name)
+            _get_desk_onboarding_url(supplier_onboarding.name),
+            get_system_name()
         )
         
         frappe.sendmail(
@@ -303,10 +325,10 @@ def send_validation_started_email(supplier_onboarding):
     <p>Track status: <a href="{1}">Click here</a></p>
 
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(
+    {0}</p>""".format(
         supplier_onboarding.supplier_name,
         _get_portal_onboarding_url(supplier_onboarding.name),
+        get_purchase_team_name()
     )
 
     frappe.sendmail(
@@ -338,14 +360,15 @@ def send_approval_email(supplier_onboarding):
     <p><strong>Approved By:</strong> {1}</p>
     <p><strong>Approved Date:</strong> {2}</p>
     
-    <p>Thank you for partnering with DeVoltrans!</p>
+    <p>Thank you for partnering with {3}!</p>
     
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(
+    {4}</p>""".format(
         supplier_onboarding.supplier_name,
         supplier_onboarding.approved_by,
-        frappe.utils.format_datetime(supplier_onboarding.approved_date)
+        frappe.utils.format_datetime(supplier_onboarding.approved_date),
+        get_company_name(),
+        get_purchase_team_name()
     )
     
     frappe.sendmail(
@@ -377,8 +400,7 @@ def send_rejection_email(supplier_onboarding, reason):
     <p>If you have any questions, please contact our Purchase team.</p>
     
     <p>Best regards,<br>
-    DeVoltrans Purchase Team</p>
-    """.format(supplier_onboarding.supplier_name, reason)
+    {2}</p>""".format(supplier_onboarding.supplier_name, reason, get_purchase_team_name())
     
     frappe.sendmail(
         recipients=[supplier_onboarding.email],

@@ -14,8 +14,8 @@ frappe.ui.form.on('Purchase Order', {
                 },
                 callback: function(r) {
                     if (!r.message || r.message.length === 0) {
-                        // Check if user has DeVoltrans Management role
-                        if (!frappe.user_roles.includes('DeVoltrans Management')) {
+                        // Check if user has Vendor Management role
+                        if (!frappe.user_roles.includes('Vendor Management')) {
                             frappe.msgprint({
                                 title: __('Supplier Not Approved'),
                                 message: __('This supplier has not completed the onboarding process. Purchase Order cannot be created.'),

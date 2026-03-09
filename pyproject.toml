@@ -1,7 +1,7 @@
 [project]
 name = "addsol_vendor_onboarding"
 authors = [
-    { name = "Addition Solutions", email = "contact@aitspl.com"}
+    { name = "Addition Solutions", email = "erpnext@aitspl.com"}
 ]
 description = "Vendor on boarding process for new supplier in India"
 requires-python = ">=3.10"
