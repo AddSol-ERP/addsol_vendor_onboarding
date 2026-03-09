@@ -66,7 +66,7 @@ def get_context(context):
         context.access_denied = True
         context.error_title = _("Supplier Portal Access Required")
         context.error_message = _("This portal is only for registered suppliers. Please contact the Purchase team if you believe you should have access.")
-        context.support_email = "contact@aitspl.com"
+        context.support_email = "erpnext@aitspl.com"
         return context
     
     # Get supplier associated with this email (include disabled suppliers for onboarding)

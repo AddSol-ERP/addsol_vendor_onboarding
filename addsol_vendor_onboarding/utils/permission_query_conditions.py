@@ -22,7 +22,7 @@ def get_supplier_onboarding_conditions(user, doctype=None):
     if (
         "System Manager" in user_roles
         or "Purchase Manager" in user_roles
-        or "DeVoltrans Management" in user_roles
+        or "Vendor Management" in user_roles
     ):
         # Admin users can see all records
         return ""
@@ -66,8 +66,8 @@ def has_supplier_onboarding_permission(doc, ptype=None, user=None, debug=False):
         if user_email and doc.email == user_email:
             return None
     
-    # DeVoltrans Management role has access
-    if "DeVoltrans Management" in user_roles:
+    # Vendor Management role has access
+    if "Vendor Management" in user_roles:
         return None
     
     return False

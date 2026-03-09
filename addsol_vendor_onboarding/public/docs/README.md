@@ -1,10 +1,10 @@
-# DeVoltrans Vendor Onboarding for ERPNext 15
+# Vendor Onboarding for ERPNext 15
 
 Custom ERPNext app for automated vendor onboarding with Cashfree API validation for Indian suppliers.
 
 ## 📋 Overview
 
-This custom app implements a complete vendor onboarding workflow for DeVoltrans Pvt. Ltd. with automated validation of supplier credentials through Cashfree APIs.
+This custom app implements a complete vendor onboarding workflow with automated validation of supplier credentials through Cashfree APIs.
 
 ## ✨ Features
 
@@ -40,7 +40,7 @@ When prompted, provide:
 - **App Title**: Vendor Onboarding
 - **App Description**: Vendor on boarding process for new supplier in India
 - **App Publisher**: Addition Solutions
-- **App Email**: contact@aitspl.com
+- **App Email**: erpnext@aitspl.com
 - **App License**: MIT
 
 ### Step 2: Copy Files
@@ -102,7 +102,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 
 1. Go to: **Setup > Role**
 2. Click **New**
-3. Role Name: `DeVoltrans Management`
+3. Role Name: `Vendor Management`
 4. Save
 
 ### 4. Configure Email Account
@@ -122,7 +122,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 - Permissions: View and update own onboarding record
 
 **Management:**
-- Role: `DeVoltrans Management`
+- Role: `Vendor Management`
 - Permissions: All + Emergency PO creation
 
 ## 📖 Usage Guide
@@ -226,7 +226,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 - ❌ Cannot create PO for unapproved suppliers
 - ✅ Can only create PO for approved suppliers
 
-### DeVoltrans Management Role
+### Vendor Management Role
 - ✅ Can create emergency POs
 - ⚠️ Warning displayed for unapproved suppliers
 
@@ -394,7 +394,7 @@ addsol_vendor_onboarding/
 
 For issues, questions, or contributions:
 
-- **Email**: contact@aitspl.com
+- **Email**: erpnext@aitspl.com
 - **Company**: Addition Solutions
 - **Website**: www.aitspl.com
 
@@ -406,7 +406,7 @@ Copyright (c) 2025 Addition Solutions
 
 ## 🙏 Credits
 
-Developed by **Addition Solutions** for **DeVoltrans Pvt. Ltd.**
+Developed by **Addition Solutions**
 
 ---
 

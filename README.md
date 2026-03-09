@@ -1,23 +1,122 @@
-# DeVoltrans Vendor Onboarding for ERPNext 15
+# Addsol Vendor Onboarding
 
-Custom ERPNext app for automated vendor onboarding with Cashfree API validation for Indian suppliers.
+A comprehensive ERPNext application for automated vendor onboarding with Cashfree API validation for Indian suppliers. This app streamlines the complete supplier registration process with automated credential validation, approval workflows, and integration with ERPNext's purchasing system.
 
-## 📋 Overview
+## Overview
 
-This custom app implements a complete vendor onboarding workflow for DeVoltrans Pvt. Ltd. with automated validation of supplier credentials through Cashfree APIs.
+The **Addsol Vendor Onboarding App** (`addsol_vendor_onboarding`) is designed for businesses that require a robust, automated supplier onboarding process with Indian compliance validation. It provides end-to-end management of supplier registration, from initial invitation through automated GSTN, PAN, and bank account validation, to final approval and integration with the purchasing system.
 
-## ✨ Features
+![Addsol Vendor Onboarding](addsol_vendor_onboarding/documentation/images/addsol_vendor_onboarding.png)
 
-- ✅ **Automated Supplier Creation**: Purchase Manager initiates onboarding
-- ✅ **Credential Management**: Automatic email with login credentials
-- ✅ **Supplier Portal**: Suppliers can submit their data online
-- ✅ **Cashfree API Integration**: Validates GSTN, PAN, and Bank Account
-- ✅ **Approval Workflow**: Purchase Manager review and approval
-- ✅ **Email Notifications**: Status updates at each stage
-- ✅ **Purchase Order Control**: Only approved suppliers can receive POs
-- ✅ **Emergency Override**: Management role can bypass restrictions
-- ✅ **Re-verification**: Update locked supplier details
-- ✅ **Audit Trail**: Complete validation logging
+### **Core Onboarding Features**
+
+**Key capabilities include:**
+- Complete supplier lifecycle management from invitation to approval
+- Automated credential validation through Cashfree APIs
+- Secure supplier portal for data submission
+- Multi-stage approval workflow with role-based permissions
+- Integration with ERPNext's Purchase Order system
+- Comprehensive audit trail and validation logging
+- Email notifications at every workflow stage
+- Emergency override capabilities for critical situations
+
+**Supported Validations:**
+- GSTN (Goods and Services Tax Network) verification
+- PAN (Permanent Account Number) validation
+- Bank account and IFSC code verification
+- Udyog Aadhaar certificate validation
+- Document upload and verification
+
+## Business Benefits
+
+**For Procurement Teams:**
+- Reduce manual supplier verification time by 90%
+- Ensure compliance with Indian regulatory requirements
+- Automated validation eliminates human error
+- Complete audit trail for compliance and reporting
+- Streamlined workflow reduces onboarding cycle time
+
+**For Suppliers:**
+- Self-service portal for convenient data submission
+- Real-time validation feedback and status updates
+- Secure credential management
+- Clear communication throughout the process
+- Mobile-friendly interface for accessibility
+
+**For Management:**
+- Enhanced visibility into supplier onboarding pipeline
+- Risk mitigation through automated validations
+- Emergency override capabilities for business continuity
+- Comprehensive reporting and analytics
+- Integration with existing ERPNext workflows
+
+**Overall Benefits:**
+- Unified platform for supplier management
+- Reduced administrative overhead
+- Improved data accuracy and consistency
+- Enhanced security and compliance
+- Scalable solution for growing supplier networks
+
+## Features
+
+### **Core Features**
+
+**Supplier Management:**
+- Automated supplier creation and invitation system
+- Secure credential generation and delivery
+- Supplier portal with role-based access
+- Document management and attachment tracking
+- Supplier status tracking and reporting
+
+**Validation System:**
+- Cashfree API integration for credential validation
+- GSTN, PAN, and bank account verification
+- Udyog Aadhaar certificate validation
+- Real-time validation status updates
+- Comprehensive validation logging
+- Failed validation notification and retry mechanisms
+
+**Workflow Automation:**
+- Multi-stage approval workflow
+- Email notifications at each workflow stage
+- Role-based permission controls
+- Emergency override for critical situations
+- Re-verification process for updated information
+- Purchase Order integration and restrictions
+
+**Integration Features:**
+- Seamless ERPNext Supplier integration
+- Purchase Order control and restrictions
+- Email system integration for notifications
+- Role-based access control
+- Audit trail and compliance logging
+- Document management integration
+
+### **Validation Capabilities**
+
+**GSTN Validation:**
+- Real-time GSTN verification through Cashfree APIs
+- Automatic GST certificate validation
+- GST status and registration date verification
+- Business name and address matching
+
+**PAN Validation:**
+- PAN card number format validation
+- Name matching with PAN records
+- PAN status verification
+- Tax payer category verification
+
+**Bank Account Validation:**
+- Bank account number verification
+- IFSC code validation
+- Bank name and branch verification
+- Account holder name matching
+
+**Document Validation:**
+- GST certificate upload and verification
+- PAN card attachment and validation
+- Bank statement verification
+- Udyog Aadhaar certificate validation
 
 ## 🔧 Requirements
 
@@ -27,49 +126,33 @@ This custom app implements a complete vendor onboarding workflow for DeVoltrans 
 - **Node.js**: 18.x or higher
 - **Cashfree Account**: With API access for verification services
 
-## 📦 Installation
+## Installation
 
-### Step 1: Get the App
-
-```bash
-cd ~/frappe-bench
-bench new-app addsol_vendor_onboarding
-```
-
-When prompted, provide:
-- **App Title**: Vendor Onboarding
-- **App Description**: Vendor on boarding process for new supplier in India
-- **App Publisher**: Addition Solutions
-- **App Email**: contact@aitspl.com
-- **App License**: MIT
-
-### Step 2: Copy Files
-
-Copy all the files from the artifacts to your app directory following the structure provided.
-
-### Step 3: Install the App
+You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 
 ```bash
-bench --site your-site-name install-app addsol_vendor_onboarding
+cd $PATH_TO_YOUR_BENCH
+bench get-app $URL_OF_THIS_REPO --branch version-15
+bench install-app addsol_vendor_onboarding
 ```
 
-### Step 4: Run Migrations
+### Prerequisites
 
-```bash
-bench --site your-site-name migrate
-```
+- ERPNext Version 15
+- Python 3.10 or higher
+- Node.js 18.x or higher
+- Cashfree Account with API access for verification services
+- Basic understanding of ERPNext supplier management
+- System Manager permissions for configuration
 
-### Step 5: Build Assets
+### Quick Start
 
-```bash
-bench build --app addsol_vendor_onboarding
-```
-
-### Step 6: Restart Services
-
-```bash
-bench restart
-```
+1. Install the app using the commands above
+2. Configure Cashfree API credentials in Cashfree Settings
+3. Create and assign required roles (Purchase Manager, Vendor Management)
+4. Configure email account for notifications
+5. Create your first supplier and initiate onboarding
+6. Test the complete workflow with sample data
 
 ## ⚙️ Configuration
 
@@ -102,7 +185,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 
 1. Go to: **Setup > Role**
 2. Click **New**
-3. Role Name: `DeVoltrans Management`
+3. Role Name: `Vendor Management`
 4. Save
 
 ### 4. Configure Email Account
@@ -122,7 +205,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 - Permissions: View and update own onboarding record
 
 **Management:**
-- Role: `DeVoltrans Management`
+- Role: `Vendor Management`
 - Permissions: All + Emergency PO creation
 
 ## 📖 Usage Guide
@@ -226,7 +309,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 - ❌ Cannot create PO for unapproved suppliers
 - ✅ Can only create PO for approved suppliers
 
-### DeVoltrans Management Role
+### Vendor Management Role
 - ✅ Can create emergency POs
 - ⚠️ Warning displayed for unapproved suppliers
 
@@ -350,13 +433,51 @@ addsol_vendor_onboarding/
 └── README.md
 ```
 
-## 🔐 Security Considerations
+## Integration
 
-1. **API Credentials**: Stored securely using Frappe's Password field
-2. **Role-Based Access**: Strict permission controls
-3. **Data Validation**: Format validation before API calls
-4. **Audit Trail**: Complete logging of all validations
-5. **Email Security**: Credentials sent via secure email
+### **ERPNext Integration**
+- **Supplier Module**: Direct integration with ERPNext's Supplier doctype
+- **Purchase Orders**: Automatic restriction enforcement for unapproved suppliers
+- **Email System**: Seamless integration with ERPNext's email infrastructure
+- **Role System**: Utilizes ERPNext's role-based access control
+- **Document Management**: Integration with ERPNext's file management system
+- **Audit Trail**: Complete logging within ERPNext's audit framework
+
+### **External Integration**
+- **Cashfree APIs**: Real-time validation through Cashfree's verification services
+- **SMTP Servers**: Support for external email service providers
+- **Bank Systems**: Ready for integration with banking verification APIs
+- **GST Portal**: Prepared for GST portal integration
+
+### **Technical Integration**
+- **Background Jobs**: Utilizes RQ for asynchronous validation processing
+- **Webhooks**: Support for real-time status updates
+- **API Endpoints**: RESTful APIs for external system integration
+- **Database**: Optimized database queries for performance
+- **Caching**: Intelligent caching for improved response times
+
+## Security
+
+### **Data Protection**
+- **API Credentials**: Stored securely using Frappe's Password field with encryption
+- **Role-Based Access**: Strict permission controls for different user roles
+- **Data Validation**: Format validation before API calls to prevent injection
+- **Audit Trail**: Complete logging of all validations and system actions
+- **Email Security**: Credentials sent via secure email channels
+
+### **Compliance & Privacy**
+- **GDPR Compliance**: Data handling practices compliant with privacy regulations
+- **Data Minimization**: Only collect necessary supplier information
+- **Secure Storage**: All sensitive data encrypted at rest
+- **Access Logs**: Complete audit trail of all data access
+- **Retention Policies**: Configurable data retention and cleanup
+
+### **API Security**
+- **Rate Limiting**: Protection against API abuse and excessive calls
+- **Input Validation**: Comprehensive validation of all user inputs
+- **Error Handling**: Secure error messages that don't expose sensitive information
+- **HTTPS Only**: All external API calls use secure HTTPS connections
+- **Token Management**: Secure API token handling and refresh mechanisms
 
 ## 🧪 Testing
 
@@ -390,11 +511,37 @@ addsol_vendor_onboarding/
 - [ ] Mobile app support
 - [ ] Advanced analytics dashboard
 
+## Support and Contributing
+
+### **Contributing**
+
+This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+
+```bash
+cd apps/addsol_vendor_onboarding
+pre-commit install
+```
+
+Pre-commit is configured to use the following tools for checking and formatting your code:
+
+- ruff
+- eslint
+- prettier
+- pyupgrade
+
+### **Support**
+
+For support and queries:
+- **Documentation**: Refer to the comprehensive user guides and API documentation
+- **Issues**: Report bugs and feature requests on the repository
+- **Community**: Join our community for discussions and best practices
+- **Email**: erpnext@aitspl.com for direct support
+
 ## 🤝 Support
 
 For issues, questions, or contributions:
 
-- **Email**: contact@aitspl.com
+- **Email**: erpnext@aitspl.com
 - **Company**: Addition Solutions
 - **Website**: www.aitspl.com
 
@@ -402,15 +549,21 @@ For issues, questions, or contributions:
 
 MIT License
 
-Copyright (c) 2025 Addition Solutions
+Copyright (c) 2026 Addition Solutions
 
 ## 🙏 Credits
 
-Developed by **Addition Solutions** for **DeVoltrans Pvt. Ltd.**
+**Developed by Addition Solutions**
+*Innovative solutions for modern business challenges*
 
+Visit us at: [https://aitspl.com](https://aitspl.com)
+
+Commercial ERPNext customization and implementation services available.
+Contact: erpnext@aitspl.com
 ---
 
 **Version**: 1.2.1  
-**Last Updated**: January 2025  
+**Last Updated**: February 2026  
 **ERPNext Version**: 15.x  
 **Status**: Production Ready
+

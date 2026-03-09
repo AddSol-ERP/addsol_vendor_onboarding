@@ -9,7 +9,7 @@ app_name = "addsol_vendor_onboarding"
 app_title = "Addsol Supplier Onboarding"
 app_publisher = "Addition Solutions"
 app_description = "Supplier onboarding process for new suppliers in India"
-app_email = "contact@aitspl.com"
+app_email = "erpnext@aitspl.com"
 app_license = "mit"
 
 # Apps

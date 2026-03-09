@@ -37,7 +37,7 @@ frappe.ui.form.on('Supplier Onboarding', {
         if (!frm.doc.__islocal &&
             (frappe.user_roles.includes('Purchase Manager') ||
              frappe.user_roles.includes('System Manager') ||
-             frappe.user_roles.includes('DeVoltrans Management'))) {
+             frappe.user_roles.includes('Vendor Management'))) {
 
             frm.add_custom_button(__('Reconcile Validation Status'), function() {
                 reconcile_validation_status(frm);

@@ -48,14 +48,14 @@ def validate_supplier_email(doc, method=None):
 def validate_purchase_order(doc, method=None):
     """
     Validate that Purchase Order is only created for approved suppliers.
-    Exception: Users with 'DeVoltrans Management' role can create emergency POs.
+    Exception: Users with 'Vendor Management' role can create emergency POs.
     
     Args:
         doc: Purchase Order document
         method: Event method (before_validate/validate)
     """
-    # Check if user has DeVoltrans Management role (can create emergency PO)
-    if "DeVoltrans Management" in frappe.get_roles():
+    # Check if user has Vendor Management role (can create emergency PO)
+    if "Vendor Management" in frappe.get_roles():
         return
     
     # Check if supplier is approved
