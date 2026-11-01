@@ -123,7 +123,7 @@ class SupplierOnboarding(Document):
             return False, _("Supplier email is missing")
 
         if cint(self.credentials_email_sent) and not force:
-            return False, _("Login credentials were already sent")
+            return False, _("Private onboarding link was already sent")
 
         send_supplier_credentials(self)
         frappe.db.set_value(
@@ -134,7 +134,7 @@ class SupplierOnboarding(Document):
             update_modified=False,
         )
         self.credentials_email_sent = 1
-        return True, _("Login credentials sent to supplier")
+        return True, _("Private onboarding link sent to supplier")
     
     def validate(self):
         """Validate the document before saving."""
@@ -193,7 +193,7 @@ class SupplierOnboarding(Document):
                 pass  # Supplier might not exist yet
     
     def after_insert(self):
-        """Send login credentials to supplier after creation."""
+        """Send private onboarding link to supplier after creation."""
         if self.supplier and self.email:
             try:
                 sent, message = self._send_credentials_if_needed()
@@ -208,14 +208,14 @@ class SupplierOnboarding(Document):
                     message=str(e),
                     title="Failed to send supplier credentials"
                 )
-                frappe.msgprint(_("Warning: Could not send login credentials, but onboarding process continues. Please check user setup manually."))
+                frappe.msgprint(_("Warning: Could not send private onboarding link, but onboarding process continues. Please check email delivery and resend the private link."))
         elif self.supplier and not self.email:
             # Log warning for missing email
             frappe.log_error(
-                message=f"Supplier {self.supplier} onboarding created but no email provided. Cannot send login credentials.",
+                message=f"Supplier {self.supplier} onboarding created but no email provided. Cannot send private onboarding link.",
                 title="Missing Email for Supplier Onboarding"
             )
-            frappe.msgprint(_("Warning: No email provided for supplier. Login credentials cannot be sent. Please update the email field."))
+            frappe.msgprint(_("Warning: No email provided for supplier. Private onboarding link cannot be sent. Please update the email field."))
     
     def on_update(self):
         """Handle updates to the document."""
@@ -250,7 +250,7 @@ class SupplierOnboarding(Document):
                     message=str(e),
                     title="Failed to send supplier credentials"
                 )
-                frappe.msgprint(_("Warning: Could not send login credentials. Please check user setup manually."))
+                frappe.msgprint(_("Warning: Could not send private onboarding link. Please check email delivery and resend the private link."))
     
     def trigger_validation(self):
         """Trigger provider-based API validation."""
@@ -425,6 +425,7 @@ class SupplierOnboarding(Document):
             supplier_doc.save(ignore_permissions=True)
         
         self.save(ignore_permissions=True)
+        self._send_credentials_if_needed(force=True)
         
         frappe.msgprint(_(
             "Re-verification process initiated. Supplier will need to update their information."
@@ -565,7 +566,7 @@ def submit_supplier_data(supplier_onboarding, data):
 
 @frappe.whitelist()
 def send_credentials_manually(supplier_onboarding, force=0):
-    """Manually send login credentials to supplier."""
+    """Manually send private onboarding link to supplier."""
     try:
         _assert_onboarding_manager()
         doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)

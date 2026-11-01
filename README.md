@@ -1,5 +1,27 @@
 # Addsol Vendor Onboarding
 
+## Private email invitation workflow
+
+Supplier invitations now use `/private-vendor-onboarding#token=...`. Suppliers fill in
+and upload documents without an account, password, or Desk access. Invitations expire
+in seven days, are consumed on submission, and are replaced whenever a new invitation
+is sent. Only a SHA-256 hash is stored on the onboarding record. The token grants access
+to that form only; it does not grant access to Desk, other records, or private file downloads.
+
+Rejection and validation failure emails include a fresh submission link. Reverification
+also sends a new invitation. Managers can use **Send Private Link** on an editable record
+to replace an expired or lost invitation. Approval and PO restrictions stay in place.
+
+After deploying, run `bench --site <site-name> migrate` and clear the site cache.
+Use **Send Private Link** for existing pending records that previously received login
+credentials. Existing User accounts are retained; this change does not disable accounts
+or remove roles assigned by other applications. Supplier permissions on this app's
+onboarding DocType are removed from its standard permission definition.
+
+Validation: `path/to/bench/env/bin/python -m unittest discover -s tests -v`.
+The older login-based instructions below describe the legacy portal.
+
+
 A comprehensive ERPNext application for automated vendor onboarding with Cashfree API validation for Indian suppliers. This app streamlines the complete supplier registration process with automated credential validation, approval workflows, and integration with ERPNext's purchasing system.
 
 ## Overview

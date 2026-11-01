@@ -66,7 +66,8 @@ def _public_validation_failure_message(error_message):
 
 
 def _get_portal_onboarding_url(onboarding_name):
-    return f"{get_url()}/vendor-onboarding-form?id={onboarding_name}"
+    from addsol_vendor_onboarding.api.private_onboarding import issue_invitation
+    return issue_invitation(frappe.get_doc("Supplier Onboarding", onboarding_name))
 
 
 def _get_desk_onboarding_url(onboarding_name):
@@ -75,7 +76,7 @@ def _get_desk_onboarding_url(onboarding_name):
 
 def send_supplier_credentials(supplier_onboarding):
     """
-    Send login credentials to supplier.
+    Send a private onboarding invitation without creating a user.
     
     Args:
         supplier_onboarding: Supplier Onboarding document
@@ -83,74 +84,19 @@ def send_supplier_credentials(supplier_onboarding):
     if not supplier_onboarding.email:
         return
     
-    # Create or get supplier user. For new users, include password setup link
-    # in the same credentials email to avoid duplicate emails.
-    _user, _is_new_user, reset_link = get_or_create_supplier_user(
-        supplier_onboarding.email,
-        supplier_onboarding.supplier_name
-    )
-    
-    # Generate supplier portal URLs
-    portal_url = get_url() + "/vendor-portal"
-    onboarding_url = _get_portal_onboarding_url(supplier_onboarding.name)
-    
-    # Email subject and message
-    subject = _("Supplier Onboarding - Login Credentials")
-    
-    if reset_link:
-        password_line = _(
-            '<li><strong>Set Password:</strong> <a href="{0}">Click here</a></li>'
-        ).format(reset_link)
-    else:
-        password_line = _(
-            '<li><strong>Password:</strong> Use <a href="{0}">Forgot Password</a> if needed</li>'
-        ).format(f"{get_url()}/login")
+    from html import escape
+    from addsol_vendor_onboarding.api.private_onboarding import issue_invitation
 
-    message = """
-    <p>Dear {0},</p>
-
-    <p>Welcome to the {6} Supplier Onboarding Portal.</p>
-
-    <p><strong>Application ID:</strong> {3}</p>
-    <p><strong>Username:</strong> {2}</p>
-
-    <p><strong>Please complete the following steps:</strong></p>
-    <ol>
-        <li><strong>Set your password</strong><br>{4}</li>
-        <li><strong>Login to supplier portal</strong><br><a href="{1}">{1}</a></li>
-        <li><strong>Complete onboarding form</strong><br><a href="{5}">{5}</a></li>
-    </ol>
-
-    <p><strong>Mandatory details to submit:</strong></p>
-    <ul>
-        <li>GSTN (15 characters)</li>
-        <li>PAN (10 characters)</li>
-        <li>Bank Account Number</li>
-        <li>Bank IFSC Code (11 characters)</li>
-        <li>Phone Number (10 digits)</li>
-    </ul>
-    <p><strong>Optional details:</strong> CIN/LLPIN, Udyam Registration Number.</p>
-
-    <p><strong>Required documents:</strong> GSTN Certificate, PAN Card, Bank Document.</p>
-    <p><strong>Optional documents:</strong> Udyam Registration Certificate.</p>
-    <p><strong>Important:</strong> This is a web portal. Desk/app access is not required.</p>
-
-    <p>Best regards,<br>
-    {7}</p>""".format(
-        supplier_onboarding.supplier_name,
-        portal_url,
-        supplier_onboarding.email,
-        supplier_onboarding.name,
-        password_line,
-        onboarding_url,
-        get_company_name(),
-        get_purchase_team_name()
-    )
-    
+    url = issue_invitation(supplier_onboarding)
     frappe.sendmail(
         recipients=[supplier_onboarding.email],
-        subject=subject,
-        message=message
+        subject=_("Supplier Onboarding - Private Invitation"),
+        message=(
+            f"<p>Dear {escape(supplier_onboarding.supplier_name or '')},</p>"
+            f'<p><a href="{escape(url, quote=True)}">Complete your onboarding details</a></p>'
+            "<p>No account or login is required. This private link expires in 7 days "
+            "and can be submitted once. Please do not forward it.</p>"
+        ),
     )
 
 
@@ -175,7 +121,7 @@ def send_validation_failure_email(supplier_onboarding, error_message):
     
     <p>Please review and update your information, then resubmit.</p>
     
-    <p>Login URL: <a href="{2}">Click here</a></p>
+    <p>Private submission link: <a href="{2}">Click here</a></p>
     
     <p>Best regards,<br>
     {0}</p>""".format(
@@ -322,12 +268,10 @@ def send_validation_started_email(supplier_onboarding):
 
     <p>You will receive another update once verification is complete.</p>
 
-    <p>Track status: <a href="{1}">Click here</a></p>
 
     <p>Best regards,<br>
-    {0}</p>""".format(
+    {1}</p>""".format(
         supplier_onboarding.supplier_name,
-        _get_portal_onboarding_url(supplier_onboarding.name),
         get_purchase_team_name()
     )
 
@@ -386,6 +330,8 @@ def send_rejection_email(supplier_onboarding, reason):
         supplier_onboarding: Supplier Onboarding document
         reason: Rejection reason
     """
+    from html import escape
+    url = _get_portal_onboarding_url(supplier_onboarding.name)
     subject = _("Supplier Onboarding - Rejected")
     message = """
     <p>Dear {0},</p>
@@ -397,10 +343,11 @@ def send_rejection_email(supplier_onboarding, reason):
         {1}
     </div>
     
-    <p>If you have any questions, please contact our Purchase team.</p>
+    <p>Please correct your details and resubmit using this new private link:</p>
+    <p><a href="{3}">Update onboarding details</a> (expires in 7 days)</p>
     
     <p>Best regards,<br>
-    {2}</p>""".format(supplier_onboarding.supplier_name, reason, get_purchase_team_name())
+    {2}</p>""".format(escape(supplier_onboarding.supplier_name or ""), escape(reason or ""), get_purchase_team_name(), escape(url, quote=True))
     
     frappe.sendmail(
         recipients=[supplier_onboarding.email],

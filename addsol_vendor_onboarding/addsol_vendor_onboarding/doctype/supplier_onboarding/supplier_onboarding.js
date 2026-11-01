@@ -44,11 +44,12 @@ frappe.ui.form.on('Supplier Onboarding', {
             }).addClass('btn-secondary');
         }
         
-        // Add button to send login credentials manually
-        if (frm.doc.email && !frm.doc.__islocal && 
+        // Add button to send a new private onboarding link manually
+        if (frm.doc.email && !frm.doc.__islocal &&
+            ['Pending Submission', 'Validation Failed', 'Rejected'].includes(frm.doc.onboarding_status) &&
             (frappe.user_roles.includes('Purchase Manager') || frappe.user_roles.includes('System Manager'))) {
             
-            frm.add_custom_button(__('Send Login Credentials'), function() {
+            frm.add_custom_button(__('Send Private Link'), function() {
                 send_credentials_manually(frm);
             }).addClass('btn-secondary');
         }
@@ -257,22 +258,23 @@ function set_field_properties(frm) {
 
 function send_credentials_manually(frm) {
     frappe.confirm(
-        __('This will send login credentials to {0}. Continue?', [frm.doc.email]),
+        __('This will send a new private onboarding link to {0}. Continue?', [frm.doc.email]),
         function() {
             frappe.call({
                 method: 'addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.supplier_onboarding.supplier_onboarding.send_credentials_manually',
                 args: {
-                    supplier_onboarding: frm.doc.name
+                    supplier_onboarding: frm.doc.name,
+                    force: 1
                 },
                 callback: function(r) {
                     if (r.message && r.message.success) {
                         frappe.show_alert({
-                            message: __('Login credentials sent successfully'),
+                            message: __('Private onboarding link sent successfully'),
                             indicator: 'green'
                         });
                     } else {
                         frappe.show_alert({
-                            message: __('Failed to send login credentials'),
+                            message: __('Failed to send a new private onboarding link'),
                             indicator: 'red'
                         });
                     }

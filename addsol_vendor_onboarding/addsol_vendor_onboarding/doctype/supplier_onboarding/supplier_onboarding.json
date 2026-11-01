@@ -43,7 +43,9 @@
     "column_break_23",
     "rejection_reason",
     "re_verification_reason",
-    "amended_from"
+    "amended_from",
+    "invitation_token_hash",
+    "invitation_expires_at"
   ],
   "fields": [
     {
@@ -271,6 +273,24 @@
       "label": "Amended From",
       "options": "Supplier Onboarding",
       "read_only": 1
+    },
+    {
+      "fieldname": "invitation_token_hash",
+      "fieldtype": "Data",
+      "label": "Invitation Token Hash",
+      "hidden": 1,
+      "read_only": 1,
+      "no_copy": 1,
+      "permlevel": 1
+    },
+    {
+      "fieldname": "invitation_expires_at",
+      "fieldtype": "Datetime",
+      "label": "Invitation Expires At",
+      "hidden": 1,
+      "read_only": 1,
+      "no_copy": 1,
+      "permlevel": 1
     }
   ],
   "index_web_pages_for_search": 1,
@@ -292,16 +312,6 @@
       "read": 1,
       "report": 1,
       "role": "Purchase Manager",
-      "share": 1,
-      "write": 1
-    },
-    {
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Supplier",
       "share": 1,
       "write": 1
     },
