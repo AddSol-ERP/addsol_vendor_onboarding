@@ -11,13 +11,16 @@ from addsol_vendor_onboarding.utils.validation_utils import (
     validate_pan_format,
     validate_cin_format,
     validate_ifsc_format,
-    validate_phone_format
+    validate_phone_format,
+    PUBLIC_VALIDATION_REVIEW_MESSAGE,
+    reset_name_verification_fields,
 )
 from addsol_vendor_onboarding.utils.email_utils import (
     send_supplier_credentials,
     send_validation_started_email,
     send_validation_success_email,
     send_validation_failure_email,
+    send_validation_review_email,
     send_approval_email,
     send_rejection_email,
 )
@@ -72,6 +75,19 @@ def _assert_onboarding_manager():
 
 def _is_admin_verification_user():
     return bool(ADMIN_VERIFICATION_ROLES & set(frappe.get_roles()))
+
+
+def is_supplier_enable_override_active(onboarding):
+    """Return True while a management override still applies to the onboarding record.
+
+    The flag is set by force_enable_supplier and cleared on rejection and
+    re-verification; an Approved record no longer relies on the override.
+    """
+    if not onboarding:
+        return False
+    if not onboarding.get("supplier_enable_override"):
+        return False
+    return onboarding.get("onboarding_status") != "Approved"
 
 
 def _build_verification_block_message(disabled_mandatory, provider_label, settings_doctype):
@@ -159,8 +175,14 @@ class SupplierOnboarding(Document):
                     frappe.throw(_("Please provide {0}").format(label))
     
     def check_supplier_status(self):
-        """Ensure supplier is disabled until approved."""
+        """Ensure supplier is disabled until approved.
+
+        An active management override (Vendor Management) keeps the supplier
+        enabled even though the onboarding record is not yet approved.
+        """
         if self.supplier and self.onboarding_status != "Approved":
+            if is_supplier_enable_override_active(self):
+                return
             supplier_doc = frappe.get_doc("Supplier", self.supplier)
             if not supplier_doc.disabled:
                 supplier_doc.disabled = 1
@@ -267,6 +289,7 @@ class SupplierOnboarding(Document):
             self.cin_validated = 0
             self.bank_validated = 0
             self.udyam_validated = 0
+            reset_name_verification_fields(self)
             self.validation_date = None
             # Clear stale failure remarks when re-validation starts.
             self.validation_remarks = None
@@ -345,17 +368,60 @@ class SupplierOnboarding(Document):
                 message=str(e),
                 title=f"Failed to send validation failure email for {self.name}"
             )
+
+    def on_validation_review(self, mismatch_details=None):
+        """Called when every check is API-valid but registered names differ.
+
+        The record is kept in flux: not failed (nothing to fix for the
+        vendor) and not verified (the Purchase Manager must compare the
+        entered data against the registered names and approve or reject).
+        Vendor-facing remarks stay generic; per-check details live on the
+        name fields, in the validation logs and in the manager email.
+        """
+        self.validation_status = "Needs Review"
+        self.onboarding_status = "Review Required"
+        self.validation_date = frappe.utils.now()
+        self.validation_remarks = PUBLIC_VALIDATION_REVIEW_MESSAGE
+
+        # Get Purchase Manager for notification
+        if not self.purchase_manager:
+            self.purchase_manager = frappe.db.get_single_value(
+                "Buying Settings",
+                "purchase_manager"
+            )
+
+        self.save(ignore_permissions=True)
+
+        # Notify only the Purchase Manager; the mismatch details are internal.
+        try:
+            send_validation_review_email(self, mismatch_details or [])
+        except Exception as e:
+            frappe.log_error(
+                message=str(e),
+                title=f"Failed to send validation review email for {self.name}"
+            )
     
     def approve_supplier(self):
         """Approve the supplier and enable them."""
-        if self.onboarding_status != "Validation Successful":
-            frappe.throw(_("Supplier can only be approved after successful validation"))
-        
+        if self.onboarding_status not in ("Validation Successful", "Review Required"):
+            frappe.throw(_(
+                "Supplier can only be approved after successful validation "
+                "or Purchase Manager review of the validation results"
+            ))
+
+        # Lock the onboarding record first. The Supplier enable guard requires an
+        # Approved onboarding record to exist before the Supplier may be enabled,
+        # so the status must be persisted before the Supplier is saved.
+        self.onboarding_status = "Approved"
+        self.approved_by = frappe.session.user
+        self.approved_date = frappe.utils.now()
+        self.save(ignore_permissions=True)
+
         # Enable supplier
         if self.supplier:
             supplier_doc = frappe.get_doc("Supplier", self.supplier)
             supplier_doc.disabled = 0
-            
+
             # Update supplier with validated data
             if self.gstn:
                 supplier_doc.gstin = self.gstn
@@ -366,24 +432,21 @@ class SupplierOnboarding(Document):
             company_logo_url = self._latest_attachment_url("company_logo")
             if company_logo_url and supplier_doc.meta.has_field("image"):
                 supplier_doc.image = company_logo_url
-            
+
             supplier_doc.save(ignore_permissions=True)
-        
-        # Lock the onboarding record
-        self.onboarding_status = "Approved"
-        self.approved_by = frappe.session.user
-        self.approved_date = frappe.utils.now()
-        self.save(ignore_permissions=True)
-        
+
         # Send approval email
         send_approval_email(self)
-        
+
         frappe.msgprint(_("Supplier {0} has been approved").format(self.supplier))
-    
+
     def reject_supplier(self, reason):
         """Reject the supplier onboarding."""
         self.onboarding_status = "Rejected"
         self.rejection_reason = reason
+        # A management override does not survive rejection; clearing the flag
+        # lets check_supplier_status disable the supplier again on save.
+        self.supplier_enable_override = 0
         self.save(ignore_permissions=True)
         
         # Send rejection email
@@ -412,11 +475,15 @@ class SupplierOnboarding(Document):
         self.re_verification_reason = reason
         self.onboarding_status = "Pending Submission"
         self.validation_status = "Not Validated"
+        # A management override does not survive re-verification; the supplier is
+        # disabled below and must stay disabled until validation and approval.
+        self.supplier_enable_override = 0
         self.gstn_validated = 0
         self.pan_validated = 0
         self.cin_validated = 0
         self.bank_validated = 0
         self.udyam_validated = 0
+        reset_name_verification_fields(self)
         
         # Disable supplier until re-verification
         if self.supplier:
@@ -546,6 +613,7 @@ def submit_supplier_data(supplier_onboarding, data):
         doc.cin_validated = 0
         doc.bank_validated = 0
         doc.udyam_validated = 0
+        reset_name_verification_fields(doc)
         doc.validation_date = None
         doc.validation_remarks = None
         doc.rejection_reason = None
@@ -591,6 +659,130 @@ def approve_supplier_onboarding(supplier_onboarding):
     doc = frappe.get_doc("Supplier Onboarding", supplier_onboarding)
     doc.approve_supplier()
     return {"success": True, "message": "Supplier approved successfully"}
+
+
+@frappe.whitelist()
+def force_enable_supplier(supplier, reason):
+    """Enable a disabled supplier without completed onboarding (Vendor Management only).
+
+    Records an audited management override on the Supplier Onboarding record and
+    adds a comment on the Supplier. No provider validation is performed; the
+    onboarding status is left unchanged so it keeps reflecting the real
+    validation state.
+    """
+    if "Vendor Management" not in frappe.get_roles():
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    reason = str(reason or "").strip()
+    if not reason:
+        frappe.throw(_("Please provide a reason for the management override"))
+
+    if not supplier or not frappe.db.exists("Supplier", supplier):
+        frappe.throw(_("Invalid supplier"))
+
+    supplier_doc = frappe.get_doc("Supplier", supplier)
+    onboarding = _find_onboarding_for_supplier(supplier_doc.name)
+    created = onboarding is None
+
+    if onboarding and onboarding.onboarding_status == "Approved":
+        # No override needed: an approved onboarding record permits enabling.
+        _set_supplier_enabled(supplier_doc)
+        _add_supplier_override_comment(supplier_doc, reason, overridden=False)
+        return {
+            "success": True,
+            "message": _("Supplier {0} re-enabled (onboarding already approved)").format(supplier),
+            "onboarding": onboarding.name,
+            "created": created,
+        }
+
+    override_fields = {
+        "supplier_enable_override": 1,
+        "override_enabled_by": frappe.session.user,
+        "override_enabled_on": frappe.utils.now(),
+        "override_reason": reason,
+    }
+    if onboarding:
+        # Apply the override before saving so check_supplier_status sees an
+        # active override and never disables the supplier mid-flow.
+        for fieldname, value in override_fields.items():
+            onboarding.set(fieldname, value)
+        onboarding.save(ignore_permissions=True)
+    else:
+        onboarding = _create_onboarding_for_override(supplier_doc, override_fields)
+
+    _set_supplier_enabled(supplier_doc)
+    _add_supplier_override_comment(supplier_doc, reason, overridden=True)
+    return {
+        "success": True,
+        "message": _("Supplier {0} enabled via management override").format(supplier),
+        "onboarding": onboarding.name,
+        "created": created,
+    }
+
+
+def _find_onboarding_for_supplier(supplier_name):
+    onboarding_name = frappe.db.get_value(
+        "Supplier Onboarding",
+        {"supplier": supplier_name},
+        "name",
+        order_by="creation desc",
+    )
+    return frappe.get_doc("Supplier Onboarding", onboarding_name) if onboarding_name else None
+
+
+def _create_onboarding_for_override(supplier_doc, override_fields):
+    """Create an onboarding record for the supplier with the override applied.
+
+    The override fields are set before insert so check_supplier_status never
+    disables the supplier mid-flow. No portal credentials email is sent as a
+    side effect of an override; managers can use "Send Private Link" when
+    supplier portal access is needed.
+    """
+    if not supplier_doc.email_id:
+        frappe.throw(
+            _(
+                "Supplier {0} has no email address. Add an email address "
+                "before applying a management override."
+            ).format(frappe.bold(supplier_doc.name))
+        )
+
+    onboarding = frappe.get_doc(
+        {
+            "doctype": "Supplier Onboarding",
+            "supplier": supplier_doc.name,
+            "supplier_name": supplier_doc.supplier_name,
+            "email": supplier_doc.email_id,
+            "phone_number": supplier_doc.mobile_no,
+            # Suppress the credentials email triggered by after_insert.
+            "credentials_email_sent": 1,
+            **override_fields,
+        }
+    )
+    onboarding.insert(ignore_permissions=True)
+    # Drop the informational message raised by after_insert.
+    frappe.clear_messages()
+    return onboarding
+
+
+def _set_supplier_enabled(supplier_doc):
+    if not supplier_doc.disabled:
+        return
+    supplier_doc.disabled = 0
+    supplier_doc.save(ignore_permissions=True)
+
+
+def _add_supplier_override_comment(supplier_doc, reason, overridden):
+    escaped_reason = frappe.utils.escape_html(reason)
+    if overridden:
+        text = _(
+            "Supplier enabled via management override by {0} on {1}. "
+            "Onboarding validation was not completed. Reason: {2}"
+        ).format(frappe.session.user, frappe.utils.now(), escaped_reason)
+    else:
+        text = _(
+            "Supplier re-enabled by {0} on {1}. Onboarding is already approved. Reason: {2}"
+        ).format(frappe.session.user, frappe.utils.now(), escaped_reason)
+    supplier_doc.add_comment("Comment", text)
 
 
 @frappe.whitelist()

@@ -58,7 +58,7 @@ Use:
 Expected status flow:
 1. `Pending Submission`
 2. `Data Submitted`
-3. `Validation Successful` or `Validation Failed`
+3. `Validation Successful`, `Validation Failed`, or `Review Required`
 4. `Approved` (after PM approval)
 
 ## Step 6: Handle Validation Failed Cases
@@ -70,22 +70,38 @@ Expected status flow:
 5. Vendor resubmits data.
 6. Validation retriggers automatically on submit.
 
-## Step 7: Approve Supplier
+## Step 7: Handle Review Required Cases (Name Mismatch)
 
-1. Open record with `Validation Successful` status.
+A record reaches `Review Required` when every identifier passed provider validation but at least one registered name returned by the provider does not match the supplier name entered on the record (for example, the GSTN or PAN belongs to a different party). The record is intentionally kept in flux: not failed (there is nothing for the vendor to fix) and not verified (the decision is yours).
+
+1. Open the record with `Review Required` status.
+2. Review the **Registered Name Verification** section: it compares the entered supplier name against the registered name returned per identifier, with a `Name Matched` / `Name Mismatch` verdict.
+3. Open **Supplier Validation Log** for the raw provider response; `Review` status rows carry the mismatch explanation.
+4. Decide:
+   - **Approve** if the difference is acceptable (trade name vs legal name, naming convention, branch naming, and similar).
+   - **Reject** with a clear reason if the identifiers belong to a different party; the vendor can then correct and resubmit.
+5. The vendor cannot edit the record while it is in `Review Required`.
+
+Notes:
+- The vendor only sees a generic "awaiting review" remark; mismatch details stay internal (record fields, validation logs, and the Purchase Manager notification email).
+- The "Verification Passed - Awaiting Approval" number card counts both `Validation Successful` and `Review Required` records, so it is your full review queue.
+
+## Step 8: Approve Supplier
+
+1. Open record with `Validation Successful` or `Review Required` status.
 2. Click **Approve Supplier**.
 3. System actions:
    - Supplier is enabled
    - Validated GSTN/PAN copied to Supplier master
    - Approval email sent to vendor
 
-## Step 8: Reject Supplier (When Required)
+## Step 9: Reject Supplier (When Required)
 
 1. Open onboarding record.
 2. Use reject action and provide reason.
 3. Rejection email is sent to vendor.
 
-## Step 9: Re-Verification for Existing Approved Supplier
+## Step 10: Re-Verification for Existing Approved Supplier
 
 Use re-verification when supplier details changed.
 

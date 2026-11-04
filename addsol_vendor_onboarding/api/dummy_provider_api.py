@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import frappe
 from frappe import _
 
+from addsol_vendor_onboarding.utils.validation_utils import reset_name_verification_fields
+
 
 def validate_supplier_details(supplier_onboarding, validation_requested_at=None):
     """
@@ -28,6 +30,7 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
     doc.cin_validated = 0
     doc.bank_validated = 0
     doc.udyam_validated = 0
+    reset_name_verification_fields(doc)
     doc.save(ignore_permissions=True)
 
     frappe.log_error(

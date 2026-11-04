@@ -34,6 +34,18 @@
     "column_break_16",
     "validation_date",
     "validation_remarks",
+    "name_match_section",
+    "name_verification_html",
+    "gstn_registered_name",
+    "gstn_name_match",
+    "pan_registered_name",
+    "pan_name_match",
+    "cin_company_name",
+    "cin_name_match",
+    "bank_account_name",
+    "bank_name_match",
+    "udyam_entity_name",
+    "udyam_name_match",
     "documents_section",
     "documents_html",
     "approval_section",
@@ -43,6 +55,12 @@
     "column_break_23",
     "rejection_reason",
     "re_verification_reason",
+    "override_section",
+    "supplier_enable_override",
+    "override_enabled_by",
+    "column_break_override",
+    "override_enabled_on",
+    "override_reason",
     "amended_from",
     "invitation_token_hash",
     "invitation_expires_at"
@@ -76,7 +94,7 @@
       "fieldname": "onboarding_status",
       "fieldtype": "Select",
       "label": "Onboarding Status",
-      "options": "Pending Submission\nData Submitted\nValidation Failed\nValidation Successful\nApproved\nRejected",
+      "options": "Pending Submission\nData Submitted\nValidation Failed\nValidation Successful\nReview Required\nApproved\nRejected",
       "read_only": 1
     },
     {
@@ -84,7 +102,7 @@
       "fieldname": "validation_status",
       "fieldtype": "Select",
       "label": "Validation Status",
-      "options": "Not Validated\nIn Progress\nValidated\nFailed",
+      "options": "Not Validated\nIn Progress\nNeeds Review\nValidated\nFailed",
       "read_only": 1
     },
     {
@@ -219,6 +237,104 @@
     },
     {
       "collapsible": 1,
+      "fieldname": "name_match_section",
+      "fieldtype": "Section Break",
+      "label": "Registered Name Verification"
+    },
+    {
+      "description": "Side-by-side comparison of the supplier name entered on this record against the name registered against each identifier, rendered from the fields below.",
+      "fieldname": "name_verification_html",
+      "fieldtype": "HTML",
+      "label": "Name Comparison",
+      "read_only": 1
+    },
+    {
+      "fieldname": "gstn_registered_name",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "GSTN Registered Name",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "gstn_name_match",
+      "fieldtype": "Select",
+      "hidden": 1,
+      "label": "GSTN Name Match",
+      "no_copy": 1,
+      "options": "\nMatched\nMismatch",
+      "read_only": 1
+    },
+    {
+      "fieldname": "pan_registered_name",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "PAN Registered Name",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "pan_name_match",
+      "fieldtype": "Select",
+      "hidden": 1,
+      "label": "PAN Name Match",
+      "no_copy": 1,
+      "options": "\nMatched\nMismatch",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cin_company_name",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "CIN Company Name",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "cin_name_match",
+      "fieldtype": "Select",
+      "hidden": 1,
+      "label": "CIN Name Match",
+      "no_copy": 1,
+      "options": "\nMatched\nMismatch",
+      "read_only": 1
+    },
+    {
+      "fieldname": "bank_account_name",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Bank Account Name",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "bank_name_match",
+      "fieldtype": "Select",
+      "hidden": 1,
+      "label": "Bank Account Name Match",
+      "no_copy": 1,
+      "options": "\nMatched\nMismatch",
+      "read_only": 1
+    },
+    {
+      "fieldname": "udyam_entity_name",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Udyam Entity Name",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "udyam_name_match",
+      "fieldtype": "Select",
+      "hidden": 1,
+      "label": "Udyam Name Match",
+      "no_copy": 1,
+      "options": "\nMatched\nMismatch",
+      "read_only": 1
+    },
+    {
+      "collapsible": 1,
       "fieldname": "documents_section",
       "fieldtype": "Section Break",
       "label": "Attached Documents"
@@ -268,6 +384,47 @@
       "label": "Re-verification Reason"
     },
     {
+      "collapsible": 1,
+      "fieldname": "override_section",
+      "fieldtype": "Section Break",
+      "label": "Management Override"
+    },
+    {
+      "default": "0",
+      "description": "Supplier enabled by Vendor Management without completed onboarding validation. Cleared on rejection and re-verification.",
+      "fieldname": "supplier_enable_override",
+      "fieldtype": "Check",
+      "label": "Supplier Enable Override",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "override_enabled_by",
+      "fieldtype": "Link",
+      "label": "Override Enabled By",
+      "no_copy": 1,
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_override",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "override_enabled_on",
+      "fieldtype": "Datetime",
+      "label": "Override Enabled On",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "override_reason",
+      "fieldtype": "Small Text",
+      "label": "Override Reason",
+      "no_copy": 1,
+      "read_only": 1
+    },
+    {
       "fieldname": "amended_from",
       "fieldtype": "Link",
       "label": "Amended From",
@@ -296,7 +453,7 @@
   "index_web_pages_for_search": 1,
   "is_submittable": 0,
   "links": [],
-  "modified": "2025-01-26 10:00:00.000000",
+  "modified": "2026-11-04 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Addsol Vendor Onboarding",
   "name": "Supplier Onboarding",

@@ -151,7 +151,10 @@ doc_events = {
     },
     "Supplier": {
         "before_insert": "addsol_vendor_onboarding.api.supplier_portal.disable_new_supplier",
-        "validate": "addsol_vendor_onboarding.api.supplier_portal.validate_supplier_email"
+        "validate": [
+            "addsol_vendor_onboarding.api.supplier_portal.validate_supplier_email",
+            "addsol_vendor_onboarding.api.supplier_portal.prevent_unapproved_supplier_enable",
+        ]
     }
 }
 

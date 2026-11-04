@@ -1,7 +1,8 @@
 frappe.ui.form.on('Supplier Onboarding', {
     refresh: function(frm) {
         // Add custom buttons based on status
-        if (frm.doc.onboarding_status === 'Validation Successful' && 
+        if ((frm.doc.onboarding_status === 'Validation Successful' ||
+             frm.doc.onboarding_status === 'Review Required') &&
             !frm.doc.__islocal && 
             frappe.user_roles.includes('Purchase Manager')) {
             
@@ -57,6 +58,7 @@ frappe.ui.form.on('Supplier Onboarding', {
         // Show attached documents
         if (!frm.doc.__islocal) {
             show_attached_documents(frm);
+            render_name_verification(frm);
         }
         
         // Set field properties based on status
@@ -233,9 +235,99 @@ function show_attached_documents(frm) {
     });
 }
 
+function render_name_verification(frm) {
+    const field = frm.get_field('name_verification_html');
+    if (!field) {
+        return;
+    }
+
+    const escapeHtml = (value) => frappe.utils.escape_html(String(value || ''));
+    const checks = [
+        { label: __('GSTN'), value_field: 'gstn', name_field: 'gstn_registered_name', match_field: 'gstn_name_match', flag_field: 'gstn_validated' },
+        { label: __('PAN'), value_field: 'pan', name_field: 'pan_registered_name', match_field: 'pan_name_match', flag_field: 'pan_validated' },
+        { label: __('CIN / LLPIN'), value_field: 'cin', name_field: 'cin_company_name', match_field: 'cin_name_match', flag_field: 'cin_validated' },
+        { label: __('Bank Account'), value_field: 'bank_account_no', name_field: 'bank_account_name', match_field: 'bank_name_match', flag_field: 'bank_validated' },
+        { label: __('Udyam Registration'), value_field: 'udyog_aadhaar', name_field: 'udyam_entity_name', match_field: 'udyam_name_match', flag_field: 'udyam_validated' }
+    ];
+
+    const supplierName = String(frm.doc.supplier_name || '').trim();
+    let any_data = false;
+    let rows = '';
+
+    checks.forEach(function(check) {
+        const entered = String(frm.doc[check.value_field] || '').trim();
+        const registered = String(frm.doc[check.name_field] || '').trim();
+        const verdict = frm.doc[check.match_field] || '';
+        const validated = !!frm.doc[check.flag_field];
+
+        const label_cell = escapeHtml(check.label) +
+            (entered ? '<br><small class="text-muted">' + escapeHtml(entered) + '</small>' : '');
+
+        if (!entered) {
+            rows += '<tr>' +
+                '<td>' + label_cell + '</td>' +
+                '<td>' + escapeHtml(supplierName) + '</td>' +
+                '<td>&ndash;</td>' +
+                '<td><span class="indicator-pill gray">' + __('Not Provided') + '</span></td>' +
+                '</tr>';
+            return;
+        }
+
+        any_data = true;
+
+        let badge;
+        if (verdict === 'Matched') {
+            badge = '<span class="indicator-pill green">' + __('Name Matched') + '</span>';
+        } else if (verdict === 'Mismatch') {
+            badge = '<span class="indicator-pill red">' + __('Name Mismatch') + '</span>';
+        } else if (validated) {
+            badge = '<span class="indicator-pill green">' + __('Validated') + '</span>';
+        } else {
+            badge = '<span class="indicator-pill gray">' + __('Not Verified') + '</span>';
+        }
+
+        rows += '<tr>' +
+            '<td>' + label_cell + '</td>' +
+            '<td>' + escapeHtml(supplierName) + '</td>' +
+            '<td>' + (registered ? escapeHtml(registered) : '&ndash;') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '</tr>';
+    });
+
+    if (!any_data) {
+        field.html('');
+        return;
+    }
+
+    let hint = '';
+    if (frm.doc.onboarding_status === 'Review Required') {
+        hint = '<p class="text-warning"><strong>' + __('Review Required:') + '</strong> ' +
+            __('all identifiers are valid with the authorities, but at least one registered name differs from the supplier name on this record. Compare below, then Approve or Reject.') +
+            '</p>';
+    }
+
+    field.html(
+        '<div class="name-verification-comparison">' +
+        '<p class="text-muted">' +
+        __('Names registered against each identifier (as returned by the verification provider) compared with the supplier name on this record.') +
+        '</p>' +
+        hint +
+        '<table class="table table-bordered table-sm">' +
+        '<thead><tr>' +
+        '<th>' + __('Check') + '</th>' +
+        '<th>' + __('Supplier Name (Entered)') + '</th>' +
+        '<th>' + __('Registered Name (Provider)') + '</th>' +
+        '<th>' + __('Name Match') + '</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+        '</div>'
+    );
+}
+
 function set_field_properties(frm) {
-    // Lock fields after approval
-    if (frm.doc.onboarding_status === 'Approved') {
+    // Lock fields after approval and while awaiting review decisions
+    if (frm.doc.onboarding_status === 'Approved' || frm.doc.onboarding_status === 'Review Required') {
         frm.set_df_property('gstn', 'read_only', 1);
         frm.set_df_property('pan', 'read_only', 1);
         frm.set_df_property('cin', 'read_only', 1);

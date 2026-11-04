@@ -54,7 +54,7 @@
                     <ul>
                         <li>{{ _("Track status in Supplier Onboarding list.") }}</li>
                         <li>{{ _("Use Supplier Validation Logs for check-level details.") }}</li>
-                        <li>{{ _("Expected status flow: Pending Submission -> Data Submitted -> Validation Successful/Failed -> Approved/Rejected.") }}</li>
+                        <li>{{ _("Expected status flow: Pending Submission -> Data Submitted -> Validation Successful/Failed/Review Required -> Approved/Rejected.") }}</li>
                     </ul>
                 </div>
             </div>
@@ -72,9 +72,20 @@
 
             <div class="manual-card card shadow-sm mb-4">
                 <div class="card-body">
-                    <h4>{{ _("5. Final Decision") }}</h4>
+                    <h4>{{ _("5. Review Name Mismatches") }}</h4>
+                    <ol>
+                        <li>{{ _("Records in Review Required passed all provider checks, but a registered name differs from the entered supplier name.") }}</li>
+                        <li>{{ _("Compare the names in the Registered Name Verification section of the record.") }}</li>
+                        <li>{{ _("Approve when the difference is acceptable, or Reject with a clear reason so the vendor can correct it.") }}</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="manual-card card shadow-sm mb-4">
+                <div class="card-body">
+                    <h4>{{ _("6. Final Decision") }}</h4>
                     <ul>
-                        <li>{{ _("Approve only after Validation Successful.") }}</li>
+                        <li>{{ _("Approve after Validation Successful, or after your review of a Review Required record.") }}</li>
                         <li>{{ _("Use Reject action with clear reason when required.") }}</li>
                         <li>{{ _("Use re-verification if supplier changes critical details after approval.") }}</li>
                     </ul>

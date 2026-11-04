@@ -157,6 +157,9 @@ frappe.ready(function() {
         if (record.onboarding_status === 'Validation Failed') {
             return '{{ _("Step 2 requires action: Please review the highlighted remarks, update details, and resubmit.") }}';
         }
+        if (record.onboarding_status === 'Review Required') {
+            return '{{ _("Step 2 complete: Your details are valid with the authorities. Our purchase team is reviewing your application. No action is required from you right now.") }}';
+        }
         if (record.onboarding_status === 'Validation Successful') {
             return '{{ _("Step 2 complete: Your details are verified. Step 3 (purchase team review) is in progress.") }}';
         }
@@ -180,35 +183,35 @@ frappe.ready(function() {
         var panProvided = String(record.pan || '').trim().length > 0;
         var cinProvided = String(record.cin || '').trim().length > 0;
         var udyamProvided = String(record.udyog_aadhaar || '').trim().length > 0;
+        var reviewState = record.onboarding_status === 'Review Required';
         var checks = [
-            { label: '{{ _("GSTN") }}', passed: !!record.gstn_validated },
-            {
-                label: '{{ _("PAN") }}',
-                passed: !!record.pan_validated,
-                successText: '{{ _("Verified") }}',
-                pendingText: panProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
-            },
-            {
-                label: '{{ _("CIN / LLPIN") }}',
-                passed: !!record.cin_validated,
-                successText: '{{ _("Verified") }}',
-                pendingText: cinProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
-            },
-            { label: '{{ _("Bank") }}', passed: !!record.bank_validated },
-            {
-                label: '{{ _("Udyam Registration") }}',
-                passed: !!record.udyam_validated,
-                successText: '{{ _("Verified") }}',
-                pendingText: udyamProvided ? '{{ _("Pending") }}' : '{{ _("Not Provided") }}'
-            }
+            { label: '{{ _("GSTN") }}', provided: true, passed: !!record.gstn_validated },
+            { label: '{{ _("PAN") }}', provided: panProvided, passed: !!record.pan_validated },
+            { label: '{{ _("CIN / LLPIN") }}', provided: cinProvided, passed: !!record.cin_validated },
+            { label: '{{ _("Bank") }}', provided: true, passed: !!record.bank_validated },
+            { label: '{{ _("Udyam Registration") }}', provided: udyamProvided, passed: !!record.udyam_validated }
         ];
         var html = '<div class="verification-checks">';
         checks.forEach(function(check) {
-            var itemClass = check.passed ? 'check-pass' : 'check-pending';
-            var icon = check.passed ? 'fa-check-circle' : 'fa-circle-o';
-            var text = check.passed
-                ? (check.successText || '{{ _("Verified") }}')
-                : (check.pendingText || '{{ _("Pending") }}');
+            var itemClass, icon, text;
+            if (check.passed) {
+                itemClass = 'check-pass';
+                icon = 'fa-check-circle';
+                text = '{{ _("Verified") }}';
+            } else if (!check.provided) {
+                itemClass = 'check-pending';
+                icon = 'fa-circle-o';
+                text = '{{ _("Not Provided") }}';
+            } else if (reviewState) {
+                // Identifiers are valid; the registered name is with the purchase team.
+                itemClass = 'check-review';
+                icon = 'fa-hourglass-half';
+                text = '{{ _("Under Review") }}';
+            } else {
+                itemClass = 'check-pending';
+                icon = 'fa-circle-o';
+                text = '{{ _("Pending") }}';
+            }
             html += '<span class="verification-check ' + itemClass + '">' +
                 '<i class="fa ' + icon + '"></i> ' + check.label + ': ' + text +
                 '</span>';
@@ -230,6 +233,7 @@ frappe.ready(function() {
             step2 = 'failed';
         } else if (
             record.onboarding_status === 'Validation Successful' ||
+            record.onboarding_status === 'Review Required' ||
             record.onboarding_status === 'Approved' ||
             record.validation_status === 'Validated'
         ) {
@@ -242,7 +246,10 @@ frappe.ready(function() {
             step3 = 'done';
         } else if (record.onboarding_status === 'Rejected') {
             step3 = 'failed';
-        } else if (record.onboarding_status === 'Validation Successful') {
+        } else if (
+            record.onboarding_status === 'Validation Successful' ||
+            record.onboarding_status === 'Review Required'
+        ) {
             step3 = 'active';
         }
 
@@ -301,6 +308,10 @@ frappe.ready(function() {
                     content += '<button class="btn btn-info btn-lg" disabled>' +
                         '<i class="fa fa-check"></i> {{ _("Pending Approval") }}' +
                         '</button>';
+                } else if (record.onboarding_status === 'Review Required') {
+                    content += '<button class="btn btn-secondary btn-lg" disabled>' +
+                        '<i class="fa fa-hourglass-half"></i> {{ _("Awaiting Review") }}' +
+                        '</button>';
                 } else {
                     content += '<a href="/vendor-onboarding-form?id=' + record.name + '" class="btn btn-outline-secondary">' +
                         '<i class="fa fa-eye"></i> {{ _("View Onboarding") }}' +
@@ -349,6 +360,7 @@ frappe.ready(function() {
                     if (record.onboarding_status === 'Approved') statusClass = 'badge-success';
                     else if (record.onboarding_status === 'Rejected') statusClass = 'badge-danger';
                     else if (record.onboarding_status === 'Validation Failed') statusClass = 'badge-warning';
+                    else if (record.onboarding_status === 'Review Required') statusClass = 'badge-primary';
                     else if (record.onboarding_status === 'Validation Successful') statusClass = 'badge-info';
                     
                     content += '<span class="badge badge-lg ' + statusClass + '">' + record.onboarding_status + '</span>';
@@ -356,6 +368,7 @@ frappe.ready(function() {
                     var validationClass = 'badge-secondary';
                     if (record.validation_status === 'Validated') validationClass = 'badge-success';
                     else if (record.validation_status === 'Failed') validationClass = 'badge-danger';
+                    else if (record.validation_status === 'Needs Review') validationClass = 'badge-primary';
                     else if (record.validation_status === 'In Progress') validationClass = 'badge-warning';
                     
                     content += '<span class="badge badge-lg ' + validationClass + '">{{ _("Validation") }}: ' + record.validation_status + '</span>' +
@@ -400,6 +413,10 @@ frappe.ready(function() {
                     } else if (record.onboarding_status === 'Validation Successful') {
                         content += '<button class="btn btn-info btn-lg" disabled>' +
                             '<i class="fa fa-check"></i> {{ _("Pending Approval") }}' +
+                            '</button>';
+                    } else if (record.onboarding_status === 'Review Required') {
+                        content += '<button class="btn btn-secondary btn-lg" disabled>' +
+                            '<i class="fa fa-hourglass-half"></i> {{ _("Awaiting Review") }}' +
                             '</button>';
                     } else if (record.onboarding_status === 'Approved') {
                         content += '<button class="btn btn-success btn-lg" disabled>' +
@@ -594,6 +611,12 @@ frappe.ready(function() {
     border-color: #adb5bd;
     background: #f8f9fa;
     color: #6c757d;
+}
+
+.verification-check.check-review {
+    border-color: #6f42c1;
+    background: #f3eefc;
+    color: #59359c;
 }
 
 .help-section {

@@ -7,6 +7,8 @@ from addsol_vendor_onboarding.utils.validation_utils import (
     validate_cin_format,
     validate_ifsc_format,
     validate_phone_format,
+    PUBLIC_VALIDATION_REVIEW_MESSAGE,
+    reset_name_verification_fields,
 )
 from addsol_vendor_onboarding.services.verification_provider import (
     get_provider_settings,
@@ -148,6 +150,7 @@ def _prepare_onboarding_for_resubmission(doc):
     doc.cin_validated = 0
     doc.bank_validated = 0
     doc.udyam_validated = 0
+    reset_name_verification_fields(doc)
     doc.validation_date = None
     doc.validation_remarks = None
     doc.rejection_reason = None
@@ -328,6 +331,7 @@ def _reconcile_single_supplier_onboarding(doc, settings):
 
     updates = {}
     failed_sections = []
+    review_sections = []
     pending_sections = []
     enabled_checks = 0
 
@@ -350,6 +354,12 @@ def _reconcile_single_supplier_onboarding(doc, settings):
         elif status == "Failed":
             updates[flag_field] = 0
             failed_sections.append(validation_type)
+        elif status == "Review":
+            # Identifier is API-valid but the registered name differs from the
+            # entered supplier name: keep the tick off and surface it for
+            # Purchase Manager review instead of failing the vendor.
+            updates[flag_field] = 0
+            review_sections.append(validation_type)
         else:
             updates[flag_field] = 0
             pending_sections.append(validation_type)
@@ -359,11 +369,20 @@ def _reconcile_single_supplier_onboarding(doc, settings):
     target_validation_remarks = doc.validation_remarks
     target_validation_date = doc.validation_date
 
-    if enabled_checks > 0:
+    # Finalized records (Approved/Rejected) never change status here; only
+    # their validation flags refresh from the logs. This also guards the
+    # single-record Reconcile button against undoing a manager decision.
+    status_frozen = doc.onboarding_status in ("Approved", "Rejected")
+
+    if enabled_checks > 0 and not status_frozen:
         if failed_sections:
             target_validation_status = "Failed"
             target_onboarding_status = "Validation Failed"
             target_validation_remarks = _build_reconcile_failure_message(failed_sections)
+        elif review_sections:
+            target_validation_status = "Needs Review"
+            target_onboarding_status = "Review Required"
+            target_validation_remarks = PUBLIC_VALIDATION_REVIEW_MESSAGE
         elif pending_sections:
             # Submitted records with partial logs should be shown as in progress.
             if doc.onboarding_status != "Pending Submission":
@@ -410,6 +429,7 @@ def _reconcile_single_supplier_onboarding(doc, settings):
         "onboarding_status": doc.onboarding_status,
         "validation_status": doc.validation_status,
         "changed_fields": changed_fields,
+        "status_frozen": status_frozen,
     }
 
 
@@ -430,6 +450,7 @@ def _reconcile_supplier_onboarding_validation_states():
         "validated": 0,
         "failed": 0,
         "in_progress": 0,
+        "review": 0,
     }
 
     for onboarding_name in onboarding_names:
@@ -443,6 +464,8 @@ def _reconcile_supplier_onboarding_validation_states():
                 result["validated"] += 1
             elif reconcile_result["validation_status"] == "Failed":
                 result["failed"] += 1
+            elif reconcile_result["validation_status"] == "Needs Review":
+                result["review"] += 1
             elif reconcile_result["validation_status"] == "In Progress":
                 result["in_progress"] += 1
 
@@ -458,13 +481,15 @@ def reconcile_supplier_onboarding_validation_states():
     return {
         "success": True,
         "message": _(
-            "Reconciliation complete. Processed {0}, updated {1} (validated: {2}, failed: {3}, in progress: {4})."
+            "Reconciliation complete. Processed {0}, updated {1} "
+            "(validated: {2}, failed: {3}, in progress: {4}, needs review: {5})."
         ).format(
             result["processed"],
             result["updated"],
             result["validated"],
             result["failed"],
             result["in_progress"],
+            result["review"],
         ),
         "result": result,
     }
@@ -487,13 +512,22 @@ def reconcile_supplier_onboarding_validation_state(supplier_onboarding):
     reconcile_result = _reconcile_single_supplier_onboarding(doc, settings)
     frappe.db.commit()
 
+    if reconcile_result.get("status_frozen"):
+        message = _(
+            "Reconciliation completed for {0}. Validation flags were refreshed; "
+            "the status was left unchanged because the record is already finalized."
+        ).format(supplier_onboarding)
+    else:
+        message = _("Reconciliation completed for {0}.").format(supplier_onboarding)
+
     return {
         "success": True,
         "updated": reconcile_result["updated"],
-        "message": _("Reconciliation completed for {0}.").format(supplier_onboarding),
+        "message": message,
         "onboarding_status": reconcile_result["onboarding_status"],
         "validation_status": reconcile_result["validation_status"],
         "changed_fields": reconcile_result["changed_fields"],
+        "status_frozen": reconcile_result.get("status_frozen", False),
     }
 
 

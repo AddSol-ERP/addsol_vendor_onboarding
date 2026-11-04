@@ -5,12 +5,54 @@ frappe.ui.form.on('Supplier', {
             frm.add_custom_button(__('Start Onboarding'), function() {
                 start_onboarding(frm);
             }, __('Actions'));
-            
+
+            // Management override: enable a disabled supplier without completed
+            // onboarding (Vendor Management role only).
+            if (frm.doc.disabled && frappe.user_roles.includes('Vendor Management')) {
+                frm.add_custom_button(__('Enable Supplier (Override)'), function() {
+                    force_enable_supplier(frm);
+                }, __('Actions')).addClass('btn-danger');
+            }
+
             // Show onboarding status
             show_onboarding_status(frm);
         }
     }
 });
+
+function force_enable_supplier(frm) {
+    frappe.prompt([
+        {
+            fieldname: 'reason',
+            fieldtype: 'Text',
+            label: 'Override Reason',
+            reqd: 1
+        }
+    ],
+    function(values) {
+        frappe.call({
+            method: 'addsol_vendor_onboarding.addsol_vendor_onboarding.doctype.supplier_onboarding.supplier_onboarding.force_enable_supplier',
+            args: {
+                supplier: frm.doc.name,
+                reason: values.reason
+            },
+            freeze: true,
+            freeze_message: __('Enabling supplier...'),
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    frappe.show_alert({
+                        message: r.message.message || __('Supplier enabled via management override'),
+                        indicator: 'green'
+                    });
+                    frm.reload_doc();
+                }
+            }
+        });
+    },
+    __('Enable Supplier (Override)'),
+    __('Apply Override')
+    );
+}
 
 function start_onboarding(frm) {
     // Check if onboarding already exists
@@ -74,7 +116,7 @@ function show_onboarding_status(frm) {
             filters: {
                 supplier: frm.doc.name
             },
-            fields: ['name', 'onboarding_status', 'validation_status'],
+            fields: ['name', 'onboarding_status', 'validation_status', 'supplier_enable_override'],
             order_by: 'modified desc',
             limit: 1
         },
@@ -95,6 +137,13 @@ function show_onboarding_status(frm) {
                     __('Onboarding Status: {0}', [status.onboarding_status]),
                     color
                 );
+
+                if (status.supplier_enable_override && status.onboarding_status !== 'Approved') {
+                    frm.dashboard.add_indicator(
+                        __('Enabled by Management Override'),
+                        'orange'
+                    );
+                }
             }
         }
     });

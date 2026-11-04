@@ -10,6 +10,12 @@ import requests
 from frappe import _
 from frappe.utils import get_datetime
 from frappe.utils import cint
+from addsol_vendor_onboarding.utils.validation_utils import (
+    CHECK_NAME_FIELDS,
+    build_name_mismatch_message,
+    extract_registered_names,
+    find_matching_registered_name,
+)
 
 
 def get_cashfree_settings():
@@ -62,6 +68,46 @@ def _is_stale_against_latest_doc(supplier_onboarding, validation_requested_at=No
         return False
 
 
+def _apply_check_result(doc, validation_type, flag_field, name_field, match_field, result, supplier_name):
+    """Persist the tick, registered name and name-match verdict for one check.
+
+    The tick is set only when the provider call succeeded AND, when the
+    provider returned a registered name, that name matches the supplier name
+    entered on the record. A provider that returns no name leaves the tick on
+    API validity alone with no verdict.
+
+    Returns a dict describing the outcome for logging and outcome routing.
+    """
+    api_success = bool(result.get("success"))
+    registered_name = None
+    verdict = None
+    name_mismatch = False
+
+    supplier_name = (supplier_name or "").strip()
+    if api_success and supplier_name:
+        candidates = extract_registered_names(validation_type, result.get("data"))
+        if candidates:
+            matched_name = find_matching_registered_name(supplier_name, candidates)
+            if matched_name:
+                registered_name = matched_name
+                verdict = "Matched"
+            else:
+                registered_name = candidates[0]
+                verdict = "Mismatch"
+                name_mismatch = True
+
+    doc.set(name_field, registered_name)
+    doc.set(match_field, verdict)
+    doc.set(flag_field, 1 if (api_success and not name_mismatch) else 0)
+
+    return {
+        "api_success": api_success,
+        "name_mismatch": name_mismatch,
+        "registered_name": registered_name,
+        "verdict": verdict,
+    }
+
+
 def validate_supplier_details(supplier_onboarding, validation_requested_at=None):
     """
     Validate supplier details using Cashfree APIs.
@@ -94,16 +140,42 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
         
         all_valid = True
         error_messages = []
+        review_messages = []
+
+        # Registered names/verdicts always reflect this run, never a previous one.
+        for fieldname in CHECK_NAME_FIELDS:
+            doc.set(fieldname, None)
+
+        supplier_name = (doc.supplier_name or "").strip()
+        if not supplier_name and doc.supplier:
+            supplier_name = (
+                frappe.db.get_value("Supplier", doc.supplier, "supplier_name") or ""
+            ).strip()
         
         # Validate GSTN
         if settings.enable_gstn_validation:
             if doc.gstn:
                 gstn_payload = {"gstin": doc.gstn}
                 gstn_result = validate_gstn(doc.gstn, settings)
-                doc.gstn_validated = 1 if gstn_result["success"] else 0
-                if not gstn_result["success"]:
+                gstn_check = _apply_check_result(
+                    doc,
+                    "GSTN",
+                    "gstn_validated",
+                    "gstn_registered_name",
+                    "gstn_name_match",
+                    gstn_result,
+                    supplier_name,
+                )
+                if not gstn_check["api_success"]:
                     all_valid = False
                     error_messages.append(f"GSTN: {gstn_result['message']}")
+                elif gstn_check["name_mismatch"]:
+                    mismatch_message = build_name_mismatch_message(
+                        "GSTN", supplier_name, gstn_check["registered_name"]
+                    )
+                    gstn_result["status"] = "Review"
+                    gstn_result["message"] = mismatch_message
+                    review_messages.append(mismatch_message)
 
                 # Create validation log
                 create_validation_log(
@@ -133,10 +205,25 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
             if doc.pan:
                 pan_payload = {"pan": doc.pan}
                 pan_result = validate_pan(doc.pan, settings)
-                doc.pan_validated = 1 if pan_result["success"] else 0
-                if not pan_result["success"]:
+                pan_check = _apply_check_result(
+                    doc,
+                    "PAN",
+                    "pan_validated",
+                    "pan_registered_name",
+                    "pan_name_match",
+                    pan_result,
+                    supplier_name,
+                )
+                if not pan_check["api_success"]:
                     all_valid = False
                     error_messages.append(f"PAN: {pan_result['message']}")
+                elif pan_check["name_mismatch"]:
+                    mismatch_message = build_name_mismatch_message(
+                        "PAN", supplier_name, pan_check["registered_name"]
+                    )
+                    pan_result["status"] = "Review"
+                    pan_result["message"] = mismatch_message
+                    review_messages.append(mismatch_message)
 
                 create_validation_log(
                     supplier_onboarding,
@@ -166,10 +253,25 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
             if cin_value:
                 cin_result = validate_cin(cin_value, settings, supplier_onboarding=supplier_onboarding)
                 cin_payload = cin_result.pop("request_payload", {"cin": doc.cin})
-                doc.cin_validated = 1 if cin_result["success"] else 0
-                if not cin_result["success"]:
+                cin_check = _apply_check_result(
+                    doc,
+                    "CIN",
+                    "cin_validated",
+                    "cin_company_name",
+                    "cin_name_match",
+                    cin_result,
+                    supplier_name,
+                )
+                if not cin_check["api_success"]:
                     all_valid = False
                     error_messages.append(f"CIN: {cin_result['message']}")
+                elif cin_check["name_mismatch"]:
+                    mismatch_message = build_name_mismatch_message(
+                        "CIN", supplier_name, cin_check["registered_name"]
+                    )
+                    cin_result["status"] = "Review"
+                    cin_result["message"] = mismatch_message
+                    review_messages.append(mismatch_message)
 
                 create_validation_log(
                     supplier_onboarding,
@@ -220,10 +322,25 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
                     doc.bank_ifsc_code,
                     settings
                 )
-                doc.bank_validated = 1 if bank_result["success"] else 0
-                if not bank_result["success"]:
+                bank_check = _apply_check_result(
+                    doc,
+                    "Bank Account",
+                    "bank_validated",
+                    "bank_account_name",
+                    "bank_name_match",
+                    bank_result,
+                    supplier_name,
+                )
+                if not bank_check["api_success"]:
                     all_valid = False
                     error_messages.append(f"Bank: {bank_result['message']}")
+                elif bank_check["name_mismatch"]:
+                    mismatch_message = build_name_mismatch_message(
+                        "Bank Account", supplier_name, bank_check["registered_name"]
+                    )
+                    bank_result["status"] = "Review"
+                    bank_result["message"] = mismatch_message
+                    review_messages.append(mismatch_message)
 
                 create_validation_log(
                     supplier_onboarding,
@@ -258,11 +375,26 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
                 settings,
                 supplier_onboarding=supplier_onboarding,
             )
-            doc.udyam_validated = 1 if udyog_result["success"] else 0
             udyog_payload = udyog_result.pop("request_payload", {"udyam": udyam_value})
-            if not udyog_result["success"]:
+            udyog_check = _apply_check_result(
+                doc,
+                "Udyog Aadhaar",
+                "udyam_validated",
+                "udyam_entity_name",
+                "udyam_name_match",
+                udyog_result,
+                supplier_name,
+            )
+            if not udyog_check["api_success"]:
                 all_valid = False
                 error_messages.append(f"Udyog Aadhaar: {udyog_result['message']}")
+            elif udyog_check["name_mismatch"]:
+                mismatch_message = build_name_mismatch_message(
+                    "Udyog Aadhaar", supplier_name, udyog_check["registered_name"]
+                )
+                udyog_result["status"] = "Review"
+                udyog_result["message"] = mismatch_message
+                review_messages.append(mismatch_message)
 
             create_validation_log(
                 supplier_onboarding,
@@ -312,10 +444,15 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
             return
 
         # Update supplier onboarding status
-        if all_valid:
-            doc.on_validation_success()
-        else:
+        if not all_valid:
             doc.on_validation_failure("; ".join(error_messages))
+        elif review_messages:
+            # Every identifier is API-valid but at least one registered name
+            # differs from the entered supplier name: keep the record in flux
+            # (not failed, not verified) for Purchase Manager review.
+            doc.on_validation_review(review_messages)
+        else:
+            doc.on_validation_success()
 
         # Keep onboarding status in sync with latest validation logs immediately.
         # This avoids situations where API/log outcomes are correct but document state lags.
@@ -333,7 +470,7 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
         frappe.logger().info(
             "Validation decision for {0}: all_valid={1}, "
             "flags=(gstn={2}, pan={3}, cin={4}, bank={5}, udyam={6}), "
-            "errors={7}".format(
+            "errors={7}, name_mismatches={8}".format(
                 supplier_onboarding,
                 all_valid,
                 doc.gstn_validated,
@@ -342,6 +479,7 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
                 doc.bank_validated,
                 getattr(doc, "udyam_validated", 0),
                 "; ".join(error_messages) if error_messages else "",
+                "; ".join(review_messages) if review_messages else "",
             )
         )
         
@@ -360,7 +498,7 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
 
             settings = get_cashfree_settings()
             reconcile_result = _reconcile_single_supplier_onboarding(doc, settings)
-            if reconcile_result.get("validation_status") == "Validated":
+            if reconcile_result.get("validation_status") in ("Validated", "Needs Review"):
                 frappe.db.commit()
                 return
         except Exception as reconcile_error:
@@ -369,10 +507,14 @@ def validate_supplier_details(supplier_onboarding, validation_requested_at=None)
                 title=f"Recovery reconcile failed for {supplier_onboarding}",
             )
 
-        # Do not downgrade to failed if validation was already persisted as successful.
+        # Do not downgrade to failed if validation was already persisted as successful
+        # or as awaiting Purchase Manager review.
         if (
             doc.onboarding_status == "Validation Successful"
             and doc.validation_status == "Validated"
+        ) or (
+            doc.onboarding_status == "Review Required"
+            and doc.validation_status == "Needs Review"
         ):
             return
 
@@ -694,7 +836,7 @@ def create_validation_log(supplier_onboarding, validation_type,
     """
     try:
         log_status = result.get("status") if isinstance(result, dict) else None
-        if log_status not in ("Success", "Failed", "Pending"):
+        if log_status not in ("Success", "Failed", "Pending", "Review"):
             log_status = "Success" if result["success"] else "Failed"
 
         log = frappe.get_doc({

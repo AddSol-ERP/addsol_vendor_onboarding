@@ -45,7 +45,7 @@ def boot_session(bootinfo):
                 pending_onboarding = frappe.db.exists("Supplier Onboarding", {
                     "supplier": supplier_name,
                     "email": user_email,
-                    "onboarding_status": ["in", ["Pending Submission", "Validation Failed", "Data Submitted", "Validation Successful"]]
+                    "onboarding_status": ["in", ["Pending Submission", "Validation Failed", "Data Submitted", "Validation Successful", "Review Required"]]
                 })
                 
                 frappe.logger().info(f"Pending onboarding check: {pending_onboarding}")

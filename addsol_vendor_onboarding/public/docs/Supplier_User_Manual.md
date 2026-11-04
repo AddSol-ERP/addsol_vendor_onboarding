@@ -74,6 +74,7 @@ Tips:
 
 Possible outcomes:
 - `Validation Successful`: waiting for Purchase Manager approval.
+- `Review Required`: verification completed and your identifiers are valid; the purchase team is reviewing your details. No action is required from you unless the Purchase Manager contacts you.
 - `Validation Failed`: one or more checks failed.
 - `Approved`: onboarding complete.
 

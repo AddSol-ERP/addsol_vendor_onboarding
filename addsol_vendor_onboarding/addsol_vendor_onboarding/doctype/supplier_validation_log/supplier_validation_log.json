@@ -45,7 +45,7 @@
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "Status",
-      "options": "Success\nFailed\nPending",
+      "options": "Success\nFailed\nPending\nReview",
       "reqd": 1
     },
     {
@@ -77,7 +77,7 @@
   ],
   "index_web_pages_for_search": 1,
   "links": [],
-  "modified": "2025-01-26 10:00:00.000000",
+  "modified": "2026-11-04 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Addsol Vendor Onboarding",
   "name": "Supplier Validation Log",

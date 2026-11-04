@@ -7,6 +7,8 @@ frappe.listview_settings['Supplier Onboarding'] = {
             return [__("Rejected"), "red", "onboarding_status,=,Rejected"];
         } else if (doc.onboarding_status === "Validation Successful") {
             return [__("Validation Successful"), "blue", "onboarding_status,=,Validation Successful"];
+        } else if (doc.onboarding_status === "Review Required") {
+            return [__("Review Required"), "purple", "onboarding_status,=,Review Required"];
         } else if (doc.onboarding_status === "Validation Failed") {
             return [__("Validation Failed"), "orange", "onboarding_status,=,Validation Failed"];
         } else if (doc.onboarding_status === "Data Submitted") {

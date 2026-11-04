@@ -94,6 +94,7 @@ The **Addsol Vendor Onboarding App** (`addsol_vendor_onboarding`) is designed fo
 - Cashfree API integration for credential validation
 - GSTN, PAN, and bank account verification
 - Udyog Aadhaar certificate validation
+- Registered-name verification: provider-returned names are compared with the entered supplier name (normalized + fuzzy match), producing a three-way outcome — success, `Review Required`, or failed
 - Real-time validation status updates
 - Comprehensive validation logging
 - Failed validation notification and retry mechanisms
@@ -228,7 +229,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 
 **Management:**
 - Role: `Vendor Management`
-- Permissions: All + Emergency PO creation
+- Permissions: All + Emergency PO creation + Supplier enable override
 
 ## 📖 Usage Guide
 
@@ -246,13 +247,18 @@ For development, edit `sites/your-site-name/site_config.json`:
 
 #### Reviewing Submissions
 
-1. Wait for email notification: "Supplier Ready for Review"
+1. Wait for email notification: "Supplier Ready for Review" (or
+   "Supplier Validation Review Required" when names differ)
 2. Open the **Supplier Onboarding** document
 3. Review:
    - ✓ Validation status (GSTN, PAN, Bank)
+   - 📛 **Registered Name Verification** section: entered supplier name vs the
+     name registered against each identifier, with matched/mismatch verdicts
    - 📄 Attached documents
    - 📝 Supplier details
-4. Click **Approve** or **Reject**
+4. For records in `Review Required`, compare the names, then click **Approve**
+   (difference acceptable) or **Reject** (identifiers belong to another party)
+5. Otherwise click **Approve** or **Reject**
 
 #### Re-verification Process
 
@@ -285,6 +291,7 @@ For development, edit `sites/your-site-name/site_config.json`:
 #### After Validation
 
 - ✅ **Success**: Wait for Purchase Manager approval
+- 🕐 **Review Required**: Your identifiers are valid; the purchase team is reviewing the details. No action is needed from you unless contacted
 - ❌ **Failed**: Update information and resubmit
 
 #### Re-verification
@@ -318,6 +325,12 @@ For development, edit `sites/your-site-name/site_config.json`:
    │             ├─ APPROVE → Supplier Activated
    │             └─ REJECT → Process Ends
    │
+   ├─ NAME MISMATCH (checks valid, registered name differs)
+   │             ↓
+   │          Review Required → PM Compares Entered vs Registered Names
+   │             ├─ APPROVE → Supplier Activated
+   │             └─ REJECT → Supplier Updates & Resubmits
+   │
    └─ FAILED → Notify Supplier & Purchase Manager
                 ↓
              Supplier Updates & Resubmits
@@ -334,6 +347,26 @@ For development, edit `sites/your-site-name/site_config.json`:
 ### Vendor Management Role
 - ✅ Can create emergency POs
 - ⚠️ Warning displayed for unapproved suppliers
+- ✅ Can enable a disabled supplier without completed onboarding (see below)
+
+### Supplier Enable Override (Vendor Management)
+
+A senior-management bypass for suppliers that must be transacted with before
+onboarding validation completes:
+
+1. Open the **Supplier** form (supplier must be disabled)
+2. Click **Actions > Enable Supplier (Override)** and provide a required reason
+3. The supplier is enabled and the override is recorded:
+   - On the **Supplier Onboarding** record in the *Management Override* section (flag, user, timestamp, reason)
+   - As a comment on the **Supplier** for the activity trail
+4. Purchase Orders for that supplier are then accepted for all users (until the
+   override is cleared), and a warning is shown on the PO form
+
+Notes:
+- Onboarding status/validation state is **not** changed; formal approval still requires successful validation.
+- The override is cleared automatically on **rejection** and **re-verification**; the supplier is disabled again in both cases.
+- A Supplier with no onboarding record gets one created automatically (requires an email address on the supplier; no portal credentials email is sent).
+- Directly ticking `Disabled` off on a Supplier form is blocked for users without approval/override — the override button is the audited path. System Managers are exempt.
 
 ## 📊 Validation Logs
 

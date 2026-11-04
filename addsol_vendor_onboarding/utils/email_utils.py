@@ -8,6 +8,8 @@ import frappe
 from frappe import _
 from frappe.utils import get_url
 
+from addsol_vendor_onboarding.utils.validation_utils import PUBLIC_VALIDATION_REVIEW_MESSAGE
+
 
 def get_company_name():
     """Get the company name from ERPNext system settings."""
@@ -242,6 +244,66 @@ def send_validation_success_email(supplier_onboarding):
             subject=pm_subject,
             message=pm_message
         )
+
+
+def send_validation_review_email(supplier_onboarding, mismatch_details=None):
+    """
+    Notify the Purchase Manager that provider-valid identifiers carry name
+    mismatches and the record awaits review.
+
+    Only the Purchase Manager is notified: vendor-facing remarks stay generic
+    and the detailed comparison lives on the onboarding record itself.
+
+    Args:
+        supplier_onboarding: Supplier Onboarding document
+        mismatch_details: List of detailed mismatch messages (internal use)
+    """
+    if not supplier_onboarding.purchase_manager:
+        return
+
+    from html import escape
+
+    mismatch_items = "".join(
+        f"<li>{escape(str(item))}</li>"
+        for item in (mismatch_details or [])
+    ) or f"<li>{escape(PUBLIC_VALIDATION_REVIEW_MESSAGE)}</li>"
+
+    pm_subject = _("Supplier Validation Review Required - {0}").format(
+        supplier_onboarding.supplier_name
+    )
+    pm_message = """
+    <p>Dear Purchase Manager,</p>
+
+    <p>All identifiers for supplier <strong>{}</strong> passed provider
+    validation, but at least one registered name does not match the name
+    entered on the onboarding record.</p>
+
+    <div style="background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffeeba;">
+        <strong>Name mismatches to review:</strong>
+        <ul>
+            {}
+        </ul>
+    </div>
+
+    <p>Open the onboarding record to compare the entered details against the
+    registered names shown in the Registered Name Verification section, then
+    approve or reject the record.</p>
+
+    <p>Review Now: <a href="{}">Click here</a></p>
+
+    <p>Best regards,<br>
+    {}</p>""".format(
+        escape(supplier_onboarding.supplier_name or ""),
+        mismatch_items,
+        _get_desk_onboarding_url(supplier_onboarding.name),
+        get_system_name(),
+    )
+
+    frappe.sendmail(
+        recipients=[supplier_onboarding.purchase_manager],
+        subject=pm_subject,
+        message=pm_message
+    )
 
 
 def send_validation_started_email(supplier_onboarding):
